@@ -2,8 +2,10 @@ import os
 import csv
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
+import threading
 
 app = Flask(__name__)
+lock = threading.Lock()
 
 DATA_DIR = './data/groups'
 OUTPUT_FILE = './data/output.csv'
@@ -52,36 +54,16 @@ def submit_action():
     if not (initials and group and people and action):
         return jsonify({'error': 'Unvollständige Angaben'}), 400
 
-    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+    with lock:
+        os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
 
-    with open(OUTPUT_FILE, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        for person in people:
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            writer.writerow([initials, group, person['id'], person['lastname'], person['firstname'], action, timestamp])
+        with open(OUTPUT_FILE, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            for person in people:
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                writer.writerow([initials, group, person['id'], person['lastname'], person['firstname'], action, timestamp])
 
     return jsonify({'status': 'Erfolg', 'action': action, 'people': people})
-
-@app.route("/edit")
-def edit():
-    group = request.args.get("group")
-    id = request.args.get("id")
-
-    if not group or not id:
-        return "Fehlender Parameter", 400
-
-    # Letzte 10 Einträge für Gruppe + id aus output.csv
-    entries = []
-    with open(OUTPUT_FILE, newline='', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row["group"] == group and row["id"] == id:
-                entries.append(row)
-
-    # Sortiere nach timestamp absteigend und nimm die letzten 10
-    entries = sorted(entries, key=lambda r: r["timestamp"])[:10]
-
-    return render_template("edit.html", entries=entries, group=group, id=id)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=4000, debug=False)

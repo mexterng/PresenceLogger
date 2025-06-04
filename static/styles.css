@@ -64,44 +64,20 @@ button:hover {
 }
 
 /* Tabelle im #memberList div */
-#memberList table {
+table {
     border-collapse: collapse;
     margin: 1em auto 0;
     font-size: 1rem;
     width: auto;
 }
 
-/* Checkbox-Spalte (erste Spalte) */
-#memberList table td:first-child {
-    width: 2em;
-    padding-right: 10px;
-}
-
-/* Nachname-Spalte (zweite Spalte) */
-#memberList table th:nth-child(2),
-#memberList table td:nth-child(2) {
-    width: 8em;
-    max-width: 8em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Vorname-Spalte (dritte Spalte) */
-#memberList table th:nth-child(3),
-#memberList table td:nth-child(3) {
-    width: 8em;
-    max-width: 8em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 /* Alternierende Hintergrundfarbe für gerade Zeilen */
-#memberList table tr:nth-child(even) {
+table tr:nth-child(even) {
     background-color: #dddddd;
 }
 
 /* Tabellenkopf */
-#memberList table th {
+table th {
     font-weight: bold;
     background-color: transparent;
 }
