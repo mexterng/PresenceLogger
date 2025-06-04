@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Bearbeiten - {{ group }} - Index {{ id }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.svg') }}">
+</head>
+<body>
+    <h2>Einträge des heutigen Tages für: {{ group }}, {{ id }}</h2>
+
+    {% if entries %}
+    <table>
+        <tr>
+            <th>Kürzel</th>
+            <th>Gruppe</th>
+            <th>ID</th>
+            <th>Nachname</th>
+            <th>Vorname</th>
+            <th>Status</th>
+            <th>Timestamp</th>
+        </tr>
+        {% for entry in entries %}
+        <tr>
+            <td>{{ entry.initials }}</td>
+            <td>{{ entry.group }}</td>
+            <td>{{ entry.id }}</td>
+            <td>{{ entry.lastname }}</td>
+            <td>{{ entry.firstname }}</td>
+            <td>{{ entry.status }}</td>
+            <td>{{ entry.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>Keine Einträge gefunden.</p>
+    {% endif %}
+</body>
+</html>

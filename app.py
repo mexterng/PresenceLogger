@@ -65,5 +65,28 @@ def submit_action():
 
     return jsonify({'status': 'Erfolg', 'action': action, 'people': people})
 
+@app.route("/edit")
+def edit():
+    group = request.args.get("group")
+    id = request.args.get("id")
+
+    if not group or not id:
+        return "Fehlender Parameter", 400
+
+    today = datetime.now().date()
+    entries = []
+    with lock:
+        with open(OUTPUT_FILE, newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["group"] == group and row["id"] == id:
+                    try:
+                        row_date = datetime.fromisoformat(row["timestamp"]).date()
+                        if row_date == today:
+                            entries.append(row)
+                    except ValueError:
+                        continue  # ignore rows with invalid timestamps
+    return render_template("edit.html", entries=entries, group=group, id=id)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=4000, debug=False)
