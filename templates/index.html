@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Abwesenheit Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.svg') }}">
+</head>
+<body>
+    <h1>Status ändern</h1>
+
+    <label for="initials">Kürzel:</label>
+    <input type="text" id="initials" placeholder="z. B. abc">
+
+    <label for="groupSelect">Gruppe wählen:</label>
+    <select id="groupSelect">
+        <option value="">-- Gruppe auswählen --</option>
+        {% for group in groups %}
+        <option value="{{ group }}">{{ group }}</option>
+        {% endfor %}
+    </select>
+
+    <div id="memberList"></div>
+
+    <div class="buttonRow">
+        <button id="exitBtn">Ausgetreten</button>
+        <button id="entryBtn">Eingetreten</button>
+    </div>
+
+    <p id="statusMsg"></p>
+
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+</body>
+</html>
