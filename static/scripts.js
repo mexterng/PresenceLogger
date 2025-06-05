@@ -71,9 +71,12 @@ function submitAction(actionType) {
     }
     
     const selected = [];
-    radiobuttons.forEach(cb => {
-        if (cb.checked) {
-            const person = fullList[cb.dataset.index];
+    radiobuttons.forEach(rb => {
+        rb.addEventListener("change", () => {
+            document.getElementById("statusMsg").innerText = "";
+        });
+        if (rb.checked) {
+            const person = fullList[rb.dataset.index];
             selected.push(person);
         }
     });
@@ -117,6 +120,9 @@ function submitAction(actionType) {
         console.error(error);
         document.getElementById("statusMsg").innerText = "Fehler beim Speichern.";
     });
+    if (actionType === "eingetreten"){
+        document.querySelectorAll(".personRadio").forEach(rb => rb.checked = false);
+    }
 }
 
 document.getElementById("entryBtn").addEventListener("click", () => {
