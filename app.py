@@ -63,7 +63,7 @@ def submit_action():
                 timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 writer.writerow([initials, group, person['id'], person['lastname'], person['firstname'], action, timestamp])
 
-    return jsonify({'status': 'Erfolg', 'action': action, 'people': people})
+    return jsonify({'status': 'OK', 'action': action, 'people': people})
 
 @app.route("/edit")
 def edit():
