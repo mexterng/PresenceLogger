@@ -34,7 +34,7 @@ document.getElementById("groupSelect").addEventListener("change", () => {
         let table = `<table><tr><th></th><th>Nachname</th><th>Vorname</th></tr>`;
         list.forEach((person, index) => {
             table += `<tr>
-                        <td><input type="checkbox" class="personCheck" data-index="${index}"></td>
+                        <td><input type="radio" class="personRadio" name="selectedPerson" data-index="${index}"></td>
                         <td>${person.lastname}</td>
                         <td>${person.firstname}</td>
                         <td><a href="/edit?group=${encodeURIComponent(group)}&id=${person.id}" class="editIcon" title="Bearbeiten">&#9998;</a></td>
@@ -52,7 +52,7 @@ function submitAction(actionType) {
     const initials = document.getElementById("initials").value.trim();
     const group = document.getElementById("groupSelect").value;
     const memberList = document.getElementById("memberList");
-    const checkboxes = document.querySelectorAll(".personCheck");
+    const radiobuttons = document.querySelectorAll(".personRadio");
     const fullList = JSON.parse(memberList.dataset.members || "[]");
 
     missingFields = false;
@@ -65,20 +65,20 @@ function submitAction(actionType) {
         document.getElementById("statusMsg").innerText += "\nBitte eine Gruppe auswählen.";
         missingFields = true;
     }
-    if (group && checkboxes.length === 0) {
+    if (group && radiobuttons.length === 0) {
         document.getElementById("statusMsg").innerText += "\nKeine Mitglieder gefunden.";
         missingFields = true;
     }
     
     const selected = [];
-    checkboxes.forEach(cb => {
+    radiobuttons.forEach(cb => {
         if (cb.checked) {
             const person = fullList[cb.dataset.index];
             selected.push(person);
         }
     });
 
-    if (selected.length === 0 && checkboxes.length > 0) {
+    if (selected.length === 0 && radiobuttons.length > 0) {
         document.getElementById("statusMsg").innerText += "\nBitte eine Person auswählen.";
         missingFields = true;
     }
