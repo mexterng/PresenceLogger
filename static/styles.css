@@ -80,6 +80,7 @@ table tr:nth-child(even) {
 table th {
     font-weight: bold;
     background-color: transparent;
+    text-align: center;
 }
 
 .saveIcon, .delIcon .editIcon{

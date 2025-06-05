@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schüler bearbeiten</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -13,11 +13,13 @@
     <h2>{{ title }} {{ entries[0].firstname }} {{ entries[1].lastname }}</h2>
     <table>
         <tr>
+            <th></th>
             <th>Kürzel</th>
             <th>Nachname</th>
             <th>Vorname</th>
             <th>Status</th>
-            <th>Timestamp</th>
+            <th>Zeitstempel</th>
+            <th></th>
         </tr>
         {% for entry in entries %}
         <tr>
