@@ -6,10 +6,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-document.getElementById("groupSelect").addEventListener("change", () => {
-    const group = document.getElementById("groupSelect").value;
+function loadMembers(group) {
     if (!group) return;
-    
+
+    updateFavoriteStar();
+
     fetch("/get_members", {
         method: "POST",
         headers: {
@@ -26,8 +27,7 @@ document.getElementById("groupSelect").addEventListener("change", () => {
         if (!list || list.length === 0) {
             memberList.innerText = "Keine Mitglieder gefunden.";
             return;
-        }
-        else{
+        } else {
             document.getElementById("statusMsg").innerText = "";
         }
 
@@ -38,14 +38,19 @@ document.getElementById("groupSelect").addEventListener("change", () => {
                         <td>${person.lastname}</td>
                         <td>${person.firstname}</td>
                         <td><a href="/edit?id=${person.id}" class="editIcon" title="Bearbeiten"><i class="fa-solid fa-pencil"></i></a></td>
-                    </tr>`;
+                      </tr>`;
         });
         table += "</table>";
         memberList.innerHTML = table;
 
-        // Save member list to element
         memberList.dataset.members = JSON.stringify(list);
     });
+}
+
+document.getElementById("groupSelect").addEventListener("change", () => {
+    updateFavoriteStar();
+    const group = document.getElementById("groupSelect").value;
+    loadMembers(group);
 });
 
 function submitAction(actionType) {
@@ -124,6 +129,48 @@ function submitAction(actionType) {
         document.querySelectorAll(".personRadio").forEach(rb => rb.checked = false);
     }
 }
+
+function updateFavoriteStar() {
+    const group = document.getElementById("groupSelect").value;
+    const favoriteGroups = JSON.parse(localStorage.getItem("favoriteGroups") || "[]");
+    const star = document.getElementById("favoriteStar");
+    if (!group) {
+        star.className = "fa-regular fa-star";
+        star.style.opacity = 0.3;
+        star.style.pointerEvents = "none";
+        return;
+    }
+    star.style.opacity = 1;
+    star.style.pointerEvents = "auto";
+    if (favoriteGroups.includes(group)) {
+        star.className = "fa-solid fa-star";
+    } else {
+        star.className = "fa-regular fa-star";
+    }
+    if (favoriteGroups.includes(group)) {
+        star.classList.add("filled");
+        document.getElementById("groupSelect").querySelector(`option[value="${group}"]`).innerHTML = `★ ${group}`;
+    } else {
+        star.classList.remove("filled");
+        document.getElementById("groupSelect").querySelector(`option[value="${group}"]`).innerHTML = group;
+    }
+}
+
+document.getElementById("favoriteStar").addEventListener("click", () => {
+    const group = document.getElementById("groupSelect").value;
+    if (!group) return;
+    
+    let favoriteGroups = JSON.parse(localStorage.getItem("favoriteGroups") || "[]");
+    const index = favoriteGroups.indexOf(group);
+    if (index >= 0) {
+        favoriteGroups.splice(index, 1);
+    } else {
+        favoriteGroups.push(group);
+    }
+    localStorage.setItem("favoriteGroups", JSON.stringify(favoriteGroups));
+    document.cookie = `favoriteGroups=${favoriteGroups.join(',')}; path=/;`;
+    updateFavoriteStar();
+});
 
 document.getElementById("entryBtn").addEventListener("click", () => {
     submitAction("eingetreten");

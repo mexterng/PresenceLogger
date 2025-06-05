@@ -17,9 +17,11 @@
     <select id="groupSelect">
         <option value="">-- Gruppe auswählen --</option>
         {% for group in groups %}
-        <option value="{{ group }}">{{ group }}</option>
+        <option value="{{ group }}">{% if group in favorites %} ★ {% endif %} {{ group }}</option>
         {% endfor %}
     </select>
+    <i id="favoriteStar" class="fa-regular fa-star" title="Gruppe als Favorit speichern" style="cursor: pointer; opacity: 0.3; pointer-events: none;"></i>
+
 
     <div id="memberList"></div>
 

@@ -29,7 +29,13 @@ def read_group_members(filename):
 @app.route('/')
 def id():
     groups = read_group_list()
-    return render_template('index.html', groups=groups)
+    fav_cookie = request.cookies.get('favoriteGroups', '')
+    favorites = fav_cookie.split(',') if fav_cookie else []
+    favorites = [f for f in favorites if f in groups]  
+    def sort_key(g):
+        return (0 if g in favorites else 1, g.lower())
+    groups.sort(key=sort_key)
+    return render_template('index.html', groups=groups, favorites=favorites)
 
 @app.route('/get_members', methods=['POST'])
 def get_members():
