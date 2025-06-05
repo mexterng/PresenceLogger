@@ -37,7 +37,7 @@ document.getElementById("groupSelect").addEventListener("change", () => {
                         <td><input type="radio" class="personRadio" name="selectedPerson" data-index="${index}"></td>
                         <td>${person.lastname}</td>
                         <td>${person.firstname}</td>
-                        <td><a href="/edit?group=${encodeURIComponent(group)}&id=${person.id}" class="editIcon" title="Bearbeiten">&#9998;</a></td>
+                        <td><a href="/edit?id=${person.id}" class="editIcon" title="Bearbeiten">&#9998;</a></td>
                     </tr>`;
         });
         table += "</table>";

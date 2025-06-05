@@ -67,10 +67,9 @@ def submit_action():
 
 @app.route("/edit")
 def edit():
-    group = request.args.get("group")
     id = request.args.get("id")
 
-    if not group or not id:
+    if not id:
         return "Fehlender Parameter", 400
 
     today = datetime.now().date()
@@ -79,14 +78,35 @@ def edit():
         with open(OUTPUT_FILE, newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                if row["group"] == group and row["id"] == id:
+                if row["id"] == id:
                     try:
                         row_date = datetime.fromisoformat(row["timestamp"]).date()
                         if row_date == today:
                             entries.append(row)
                     except ValueError:
                         continue  # ignore rows with invalid timestamps
-    return render_template("edit.html", entries=entries, group=group, id=id)
+    entries.reverse()
+    return render_template("edit.html", title="Einträge des heutigen Tages von",entries=entries, id=id)
+
+@app.route("/edit-all")
+def edit_all():
+    id = request.args.get("id")
+    
+    if not id:
+        return "Fehlender Parameter", 400
+
+    entries = []
+    with lock:
+        with open(OUTPUT_FILE, newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["id"] == id:
+                    try:
+                        entries.append(row)
+                    except ValueError:
+                        continue  # ignore rows with invalid timestamps
+    entries.reverse()
+    return render_template("edit.html", title="Alle Einträge von", entries=entries, id=id, show_edit_all_link=False)
 
 # ---------- Eintrag löschen ----------
 @app.route("/api/delete_entry", methods=["POST"])
@@ -147,6 +167,8 @@ def update_entry():
                 row["timestamp"] = f'{old_timestamp.split(" ")[0]} {new["timestamp"]}'
                 updated = True
                 break
+        
+        rows.sort(key=lambda x: x["timestamp"])
 
         if updated:
             with open(OUTPUT_FILE, "w", newline='', encoding='utf-8') as f:

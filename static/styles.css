@@ -100,3 +100,13 @@ table th {
 .saveIcon { color: #2c7;  }
 .delIcon  { color: #c44; }
 .hidden   { display: none; }
+
+.underlineLink {
+    text-decoration: underline;
+    color: #333;
+    font-size: 1rem;
+}
+
+.underlineLink:hover {
+    color: #000;
+}

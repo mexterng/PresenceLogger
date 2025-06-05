@@ -2,19 +2,18 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Bearbeiten - {{ group }} - Index {{ id }}</title>
+    <title>Schüler bearbeiten</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.svg') }}">
 </head>
 <body>
-    <h2>Einträge des heutigen Tages für: {{ group }}, {{ id }}</h2>
-
+    
     {% if entries %}
+    <h2>{{ title }} {{ entries[0].firstname }} {{ entries[1].lastname }}</h2>
     <table>
         <tr>
             <th>Kürzel</th>
             <th>Gruppe</th>
-            <th>ID</th>
             <th>Nachname</th>
             <th>Vorname</th>
             <th>Status</th>
@@ -24,7 +23,6 @@
         <tr>
             <td>{{ entry.initials }}</td>
             <td>{{ entry.group }}</td>
-            <td>{{ entry.id }}</td>
             <td>{{ entry.lastname }}</td>
             <td>{{ entry.firstname }}</td>
             <td>
@@ -49,7 +47,10 @@
         {% endfor %}
     </table>
     {% else %}
-    <p>Keine Einträge gefunden.</p>
+    <a>Keine Einträge gefunden.</a>
+    {% endif %}
+    {% if show_edit_all_link is not defined or show_edit_all_link %}
+    <a href="/edit-all?id={{ id }}" class="underlineLink">Alle Einträge anzeigen</a>
     {% endif %}
     <div class="buttonRow">
         <button onclick="window.location.href='/'">Zurück zur Startseite</button>
