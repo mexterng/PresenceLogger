@@ -37,7 +37,6 @@ def get_members():
     if not group:
         return jsonify({'error': 'Keine Gruppe angegeben'}), 400
     try:
-        print(f"Anfrage für Mitglieder der Gruppe: {group}")
         members = read_group_members(group)
         return jsonify({'members': members})
     except Exception as e:
