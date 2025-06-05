@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Schüler bearbeiten</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.svg') }}">
 </head>
 <body>
@@ -21,7 +22,9 @@
         {% for entry in entries %}
         <tr>
             <td>
-                <span class="delIcon"  title="Löschen">🗑️</span>
+                <span class="delIcon" title="Löschen">
+                    <i class="fa-solid fa-trash"></i>
+                </span>
             </td>
             <td>{{ entry.initials }}</td>
             <td>{{ entry.lastname }}</td>
@@ -37,7 +40,7 @@
                 <input type="time" class="timeInp" value="{{ entry.timestamp.split(' ')[1][:8] }}">
             </td>
             <td>
-                <span class="saveIcon" style="display:none" title="Speichern">💾</span>
+                <i class="fa-solid fa-floppy-disk saveIcon" title="Speichern" style="display: none;"></i>
             </td>
             <td class="hidden"
                 data-original='{{ entry | tojson | safe }}'>

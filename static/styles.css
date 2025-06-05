@@ -82,23 +82,16 @@ table th {
     background-color: transparent;
 }
 
-.editIcon {
-    display: inline-block;
-    transform: scaleX(-1); /* horizontal spiegeln */
-    text-decoration: none;
-    color: inherit;
-    padding-left: 8px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.saveIcon, .delIcon {
+.saveIcon, .delIcon .editIcon{
     cursor: pointer;
     margin-left: 6px;
     font-size: 1.1rem;
+    color: #000;
 }
-.saveIcon { color: #2c7;  }
+.saveIcon { color: #67b32d;  }
+.saveIcon:hover { color: #579826; }
 .delIcon  { color: #c44; }
+.delIcon:hover { color: #a33; }
 .hidden   { display: none; }
 
 .underlineLink {
