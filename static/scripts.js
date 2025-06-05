@@ -104,7 +104,11 @@ function submitAction(actionType) {
     .then(response => response.json())
     .then(data => {
         if (!data.error) {
-            document.getElementById("statusMsg").innerText = "Änderung gespeichert: " + data.action;
+            console.log(data)
+            document.getElementById("statusMsg").innerText = "Änderung gespeichert: \n"
+            for (person of data.people){
+                document.getElementById("statusMsg").innerText += person.firstname + " " + person.lastname + " um " + new Date().toLocaleTimeString('de-DE') + " Uhr " + data.action + "\n";
+            }
         } else {
             document.getElementById("statusMsg").innerText = "Fehler: " + data.error;
         }
