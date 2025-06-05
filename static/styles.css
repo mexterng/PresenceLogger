@@ -20,7 +20,7 @@ a {
 
 input, select {
     padding: 6px;
-    width: 200px;
+    width: auto;
 }
 .personRadio{
     width: auto;

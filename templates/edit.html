@@ -13,7 +13,6 @@
     <table>
         <tr>
             <th>Kürzel</th>
-            <th>Gruppe</th>
             <th>Nachname</th>
             <th>Vorname</th>
             <th>Status</th>
@@ -21,8 +20,10 @@
         </tr>
         {% for entry in entries %}
         <tr>
+            <td>
+                <span class="delIcon"  title="Löschen">🗑️</span>
+            </td>
             <td>{{ entry.initials }}</td>
-            <td>{{ entry.group }}</td>
             <td>{{ entry.lastname }}</td>
             <td>{{ entry.firstname }}</td>
             <td>
@@ -32,13 +33,11 @@
                 </select>
             </td>
             <td>
-                {{ entry.timestamp.split(' ')[0] }}
-                <input type="time" class="timeInp"
-                    value="{{ entry.timestamp.split(' ')[1][:8] }}">
+                <input type="date" class="dateInp" value="{{ entry.timestamp.split(' ')[0] }}">
+                <input type="time" class="timeInp" value="{{ entry.timestamp.split(' ')[1][:8] }}">
             </td>
             <td>
                 <span class="saveIcon" style="display:none" title="Speichern">💾</span>
-                <span class="delIcon"  title="Löschen">🗑️</span>
             </td>
             <td class="hidden"
                 data-original='{{ entry | tojson | safe }}'>

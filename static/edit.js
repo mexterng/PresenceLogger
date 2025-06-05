@@ -16,6 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
         inp.addEventListener("input", () => markChanged(rowOf(inp)));
     });
 
+    document.querySelectorAll(".dateInp").forEach(inp => {
+        inp.addEventListener("input", () => markChanged(rowOf(inp)));
+    });
+
     document.querySelectorAll(".delIcon").forEach(icon => {
         icon.addEventListener("click", () => deleteRow(icon));
     });
@@ -50,7 +54,7 @@ function saveRow(icon) {
 
     const updated = {
         status: row.querySelector(".statusSel").value,
-        timestamp: row.querySelector(".timeInp").value
+        timestamp: `${row.querySelector(".dateInp").value} ${row.querySelector(".timeInp").value}`
     };
 
     fetch("/api/update_entry", {

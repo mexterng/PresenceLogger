@@ -145,8 +145,8 @@ def delete_entry():
 @app.route("/api/update_entry", methods=["POST"])
 def update_entry():
     data = request.get_json()
-    orig  = data["original"]
-    new   = data["updated"]
+    orig = data["original"]
+    new = data["updated"]
 
     updated = False
     with lock:
@@ -163,8 +163,7 @@ def update_entry():
                 row["status"]  == orig["status"]   and
                 row["timestamp"] == orig["timestamp"]):
                 row["status"]    = new["status"]
-                old_timestamp = row["timestamp"]
-                row["timestamp"] = f'{old_timestamp.split(" ")[0]} {new["timestamp"]}'
+                row["timestamp"] = new["timestamp"]
                 updated = True
                 break
         
