@@ -91,3 +91,12 @@ table th {
     font-weight: bold;
     cursor: pointer;
 }
+
+.saveIcon, .delIcon {
+    cursor: pointer;
+    margin-left: 6px;
+    font-size: 1.1rem;
+}
+.saveIcon { color: #2c7;  }
+.delIcon  { color: #c44; }
+.hidden   { display: none; }

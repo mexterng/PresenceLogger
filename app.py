@@ -88,5 +88,73 @@ def edit():
                         continue  # ignore rows with invalid timestamps
     return render_template("edit.html", entries=entries, group=group, id=id)
 
+# ---------- Eintrag löschen ----------
+@app.route("/api/delete_entry", methods=["POST"])
+def delete_entry():
+    target = request.get_json()
+
+    removed = False
+    with lock:
+        with open(OUTPUT_FILE, newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            fld = reader.fieldnames
+
+        # keep all rows except the one that matches *totally*
+        new_rows = []
+        for row in rows:
+            if (row["initials"] == target["initials"] and
+                row["group"]   == target["group"]   and
+                row["lastname"] == target["lastname"] and
+                row["firstname"]  == target["firstname"]  and
+                row["status"]   == target["status"]   and
+                row["timestamp"]== target["timestamp"]):
+                removed = True
+                continue
+            new_rows.append(row)
+
+        if removed:
+            with open(OUTPUT_FILE, "w", newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=fld)
+                writer.writeheader()
+                writer.writerows(new_rows)
+
+    return jsonify({"removed": removed})
+
+# ---------- Eintrag aktualisieren ----------
+@app.route("/api/update_entry", methods=["POST"])
+def update_entry():
+    data = request.get_json()
+    orig  = data["original"]
+    new   = data["updated"]
+
+    updated = False
+    with lock:
+        with open(OUTPUT_FILE, newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            rows   = list(reader)
+            fld    = reader.fieldnames
+
+        for row in rows:
+            if (row["initials"] == orig["initials"] and
+                row["group"]   == orig["group"]   and
+                row["lastname"] == orig["lastname"] and
+                row["firstname"]  == orig["firstname"]  and
+                row["status"]  == orig["status"]   and
+                row["timestamp"] == orig["timestamp"]):
+                row["status"]    = new["status"]
+                old_timestamp = row["timestamp"]
+                row["timestamp"] = f'{old_timestamp.split(" ")[0]} {new["timestamp"]}'
+                updated = True
+                break
+
+        if updated:
+            with open(OUTPUT_FILE, "w", newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=fld)
+                writer.writeheader()
+                writer.writerows(rows)
+
+    return jsonify({"updated": updated})
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=4000, debug=False)
