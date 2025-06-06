@@ -83,7 +83,7 @@ table th {
     text-align: center;
 }
 
-.saveIcon, .delIcon .editIcon{
+.saveIcon, .delIcon, .editIcon{
     cursor: pointer;
     margin-left: 6px;
     font-size: 1.1rem;

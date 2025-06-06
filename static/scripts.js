@@ -4,7 +4,35 @@ document.addEventListener("DOMContentLoaded", () => {
     if (savedInitials) {
         document.getElementById("initials").value = savedInitials;
     }
+
+    highlightFavoriteOptions();
 });
+
+function highlightFavoriteOptions() {
+    const favs = JSON.parse(localStorage.getItem("favoriteGroups") || "[]");
+    const select = document.getElementById("groupSelect");
+
+    // Alle echten Gruppen-Optionen (erste Option ist Platzhalter) erfassen
+    const allOpts = [...select.options].slice(1);
+
+    // Beschriftung aktualisieren + in zwei Listen aufteilen
+    const favOpts   = [];
+    const otherOpts = [];
+    for (const opt of allOpts) {
+        if (favs.includes(opt.value)) {
+            opt.textContent = `★ ${opt.value}`;
+            favOpts.push(opt);
+        } else {
+            opt.textContent = opt.value;
+            otherOpts.push(opt);
+        }
+    }
+
+    // Neu anordnen: Favoriten zuerst (alphabetisch), dann der Rest
+    [...favOpts.sort((a,b)=>a.value.localeCompare(b.value)),
+     ...otherOpts.sort((a,b)=>a.value.localeCompare(b.value))]
+        .forEach(o => select.appendChild(o));
+}
 
 function loadMembers(group) {
     if (!group) return;
@@ -35,8 +63,8 @@ function loadMembers(group) {
         list.forEach((person, index) => {
             table += `<tr>
                         <td><input type="radio" class="personRadio" name="selectedPerson" data-index="${index}"></td>
-                        <td>${person.lastname}</td>
-                        <td>${person.firstname}</td>
+                        <td onclick="selectPerson(${index})" style="cursor:pointer;">${person.lastname}</td>
+                        <td onclick="selectPerson(${index})" style="cursor:pointer;">${person.firstname}</td>
                         <td><a href="/edit?id=${person.id}" class="editIcon" title="Bearbeiten"><i class="fa-solid fa-pencil"></i></a></td>
                       </tr>`;
         });
@@ -45,6 +73,14 @@ function loadMembers(group) {
 
         memberList.dataset.members = JSON.stringify(list);
     });
+}
+
+function selectPerson(index) {
+    const radio = document.querySelector(`input.personRadio[data-index="${index}"]`);
+    if (radio) {
+        radio.checked = !radio.checked;
+        radio.dispatchEvent(new Event("change"));
+    }
 }
 
 document.getElementById("groupSelect").addEventListener("change", () => {
@@ -167,9 +203,10 @@ document.getElementById("favoriteStar").addEventListener("click", () => {
     } else {
         favoriteGroups.push(group);
     }
+    favoriteGroups.sort((a, b) => a.localeCompare(b));
     localStorage.setItem("favoriteGroups", JSON.stringify(favoriteGroups));
-    document.cookie = `favoriteGroups=${favoriteGroups.join(',')}; path=/;`;
     updateFavoriteStar();
+    highlightFavoriteOptions();
 });
 
 document.getElementById("entryBtn").addEventListener("click", () => {
