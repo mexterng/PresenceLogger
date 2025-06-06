@@ -56,6 +56,10 @@ def submit_action():
 
     with lock:
         os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+        """Create a new CSV file with header if it doesn't exist."""
+        if not os.path.exists(OUTPUT_FILE):
+            with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f_out:
+                csv.writer(f_out).writerow(["initials","group","id","lastname","firstname","status","timestamp"])
 
         with open(OUTPUT_FILE, 'a', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
