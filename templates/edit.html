@@ -57,7 +57,7 @@
     <a href="/edit-all?id={{ id }}" class="underlineLink">Alle Einträge anzeigen</a>
     {% endif %}
     <div class="buttonRow">
-        <button onclick="window.location.href='/'">Zurück zur Startseite</button>
+        <button onclick="window.history.back()">Zurück</button>
     </div>
     <script src="{{ url_for('static', filename='edit.js') }}"></script>
 </body>
