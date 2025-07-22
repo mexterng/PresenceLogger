@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Bereich - Abwesenheit Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.svg') }}" />
+    <script src="{{ url_for('static', filename='script-admin.js') }}"></script>
+  </head>
+  <body>
+    <h1>Admin Bereich</h1>
+
+    <p>Exportiere alle Log-Dateien von allen Schüler*innen:</p>
+    <button id="exportLogsBtn">Log-Dateien exportieren</button>
+    
+    <p>Exportiere die aktuellen Unterrichtsgruppen oder den aktuellen ASV-Export:</p>
+    <div class="buttonRow">
+        <button id="exportGroupsBtn">Unterrichtsgruppen exportieren</button>
+        <button id="exportGroupsBtn">ASV-Datei exportieren</button>
+    </div>
+    
+    <p>Lade einen neuen ASV-Export hoch, um die Unterrichtsgruppen zu erstellen bzw. ersetzen:</p>
+    <button id="uploadCsvBtn">ASV-Datei auswählen</button>
+
+    <p id="statusMsg"></p>
+  </body>
+</html>
