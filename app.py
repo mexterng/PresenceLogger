@@ -1,8 +1,10 @@
 import os
 import csv
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 from datetime import datetime
 import threading
+from io import BytesIO
+import zipfile
 
 app = Flask(__name__)
 lock = threading.Lock()
@@ -258,6 +260,27 @@ def update_entry():
 @app.route("/admin")
 def admin():
     return render_template("admin.html")
+
+@app.route("/api/export-logs", methods=["GET"])
+def export_logs():
+    log_dir = "./data/log"
+    
+    memory_file = BytesIO()
+    
+    # generate zip-file
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for foldername, subfolders, filenames in os.walk(log_dir):
+            for filename in filenames:
+                file_path = os.path.join(foldername, filename)
+                zf.write(file_path, os.path.relpath(file_path, log_dir))
+    
+    memory_file.seek(0)
+    
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    zip_filename = f"logs_{timestamp}.zip"
+    # send zip-file as download
+    return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)
