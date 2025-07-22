@@ -8,7 +8,7 @@ app = Flask(__name__)
 lock = threading.Lock()
 
 DATA_DIR = "./data/groups"
-OUTPUT_FILE = "./data/output.csv"
+LOG_FILE_PATH = "./data/log"
 
 
 def read_group_list():
@@ -59,26 +59,33 @@ def submit_action():
     action = data.get("action")  # "eingetreten" oder "ausgetreten"
 
     if not (initials and group and people and action):
-        return jsonify({"error": "Unvollständige Angaben"}), 400
+        return jsonify({"error": "Unvollständige Angaben", "initials": initials, "group": group, "people": people, "action":action}), 400
 
     with lock:
-        os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
-        """Create a new CSV file with header if it doesn't exist."""
-        if not os.path.exists(OUTPUT_FILE):
-            with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f_out:
-                csv.writer(f_out).writerow(
-                    [
-                        "initials",
-                        "group",
-                        "id",
-                        "lastname",
-                        "firstname",
-                        "status",
-                        "timestamp",
-                    ]
-                )
-
-        with open(OUTPUT_FILE, "a", newline="", encoding="utf-8") as f:
+        os.makedirs(LOG_FILE_PATH, exist_ok=True)
+        
+        for person in people:
+            person_id = person["id"]
+            log_file = os.path.join(LOG_FILE_PATH, f"{person_id}.csv")
+            
+            # Create a new CSV file with header if it doesn't exist.
+            if not os.path.exists(log_file):
+                with open(log_file, "w", newline="", encoding="utf-8") as f_out:
+                    csv.writer(f_out).writerow(
+                        [
+                            "initials",
+                            "group",
+                            "id",
+                            "lastname",
+                            "firstname",
+                            "status",
+                            "timestamp",
+                        ]
+                    )
+        
+        
+        # Add new entry to log-file
+        with open(log_file, "a", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             for person in people:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -102,22 +109,25 @@ def edit():
     id = request.args.get("id")
 
     if not id:
-        return "Fehlender Parameter", 400
+        return "Fehlender Parameter (id)", 400
 
     today = datetime.now().date()
     entries = []
-    with lock:
-        with open(OUTPUT_FILE, newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row["id"] == id:
+    
+    log_file = os.path.join(LOG_FILE_PATH, f"{id}.csv")
+    
+    if os.path.exists(log_file):
+        with lock:
+            with open(log_file, newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
                     try:
                         row_date = datetime.fromisoformat(row["timestamp"]).date()
                         if row_date == today:
                             entries.append(row)
                     except ValueError:
                         continue  # ignore rows with invalid timestamps
-    entries.reverse()
+        entries.reverse()
     return render_template(
         "edit.html", title="Einträge des heutigen Tages von", entries=entries, id=id
     )
@@ -128,19 +138,22 @@ def edit_all():
     id = request.args.get("id")
 
     if not id:
-        return "Fehlender Parameter", 400
+        return "Fehlender Parameter (id)", 400
 
     entries = []
-    with lock:
-        with open(OUTPUT_FILE, newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row["id"] == id:
+    
+    log_file = os.path.join(LOG_FILE_PATH, f"{id}.csv")
+    
+    if os.path.exists(log_file):
+        with lock:
+            with open(log_file, newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
                     try:
                         entries.append(row)
                     except ValueError:
                         continue  # ignore rows with invalid timestamps
-    entries.reverse()
+        entries.reverse()
     return render_template(
         "edit.html",
         title="Alle Einträge von",
@@ -154,10 +167,19 @@ def edit_all():
 @app.route("/api/delete_entry", methods=["POST"])
 def delete_entry():
     target = request.get_json()
+    person_id = target.get("id")
+
+    if not person_id:
+        return jsonify({"error": "Ungültige ID"}), 400
+
+    log_file = os.path.join(LOG_FILE_PATH, f"{person_id}.csv")
+    
+    if not os.path.exists(log_file):
+        return jsonify({"error": f"Keine Einträge zu {person_id} gefunden."}), 404
 
     removed = False
     with lock:
-        with open(OUTPUT_FILE, newline="", encoding="utf-8") as f:
+        with open(log_file, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             rows = list(reader)
             fld = reader.fieldnames
@@ -178,7 +200,7 @@ def delete_entry():
             new_rows.append(row)
 
         if removed:
-            with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
+            with open(log_file, "w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(f, fieldnames=fld)
                 writer.writeheader()
                 writer.writerows(new_rows)
@@ -192,10 +214,19 @@ def update_entry():
     data = request.get_json()
     orig = data["original"]
     new = data["updated"]
+    person_id = orig.get("id")
+    
+    if not person_id:
+        return jsonify({"error": "Ungültige ID"}), 400
 
+    log_file = os.path.join(LOG_FILE_PATH, f"{person_id}.csv")
+
+    if not os.path.exists(log_file):
+        return jsonify({"error": "Keine Einträge gefunden"}), 404
+    
     updated = False
     with lock:
-        with open(OUTPUT_FILE, newline="", encoding="utf-8") as f:
+        with open(log_file, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             rows = list(reader)
             fld = reader.fieldnames
@@ -217,7 +248,7 @@ def update_entry():
         rows.sort(key=lambda x: x["timestamp"])
 
         if updated:
-            with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
+            with open(log_file, "w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(f, fieldnames=fld)
                 writer.writeheader()
                 writer.writerows(rows)
