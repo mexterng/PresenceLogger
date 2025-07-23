@@ -338,13 +338,11 @@ def import_asv():
 def generate_group():
     ### helper ###
     def cls_to_filename(cls_str: str) -> str:
-        # Convert class name to filename in format '00a.csv'
+        # Convert class name to filename in format '00a_IT_1.csv'
         cls_str = cls_str.strip()
-        digits = ''.join(ch for ch in cls_str if ch.isdigit())
-        letter = ''.join(ch for ch in cls_str if ch.isalpha()).lower()
-        if not digits or not letter:
-            raise ValueError(f"Ungültiges Klassenformat: {cls_str}")
-        return f"{digits.zfill(2)}{letter}.csv"
+        if cls_str and cls_str[0].isdigit() and not cls_str.startswith('1'):
+            cls_str = '0' + cls_str
+        return f"{cls_str}.csv"
 
     def ensure_file_with_header(path: str) -> None:
         # Create a new CSV file with header if it doesn't exist
