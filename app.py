@@ -485,7 +485,7 @@ def exportPDF_person():
     if not person_id:
         return "Missing 'id' parameter", 400
 
-    csv_path = f"data/log/{person_id}.csv"
+    csv_path = os.path.join(LOG_FILE_PATH, person_id + ".csv")
     if not os.path.exists(csv_path):
         return f"CSV file for id {person_id} not found", 404
 
@@ -523,7 +523,18 @@ def exportCSV_group():
 
 @app.route("/api/exportCSV-person", methods=["GET"])
 def exportCSV_person():
-    pass
+    person_id = request.args.get('id')
+    if not person_id:
+        return "Missing 'id' parameter", 400
+
+    csv_path = os.path.join(LOG_FILE_PATH, person_id + ".csv")
+    
+    if not os.path.exists(csv_path):
+        return f"CSV file for id {person_id} not found", 404
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"log-data_{person_id}_{timestamp}.csv"
+    return send_file(csv_path, as_attachment=True, download_name=filename)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)
