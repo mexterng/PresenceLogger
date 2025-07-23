@@ -26,10 +26,19 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  const uploadASVBtn = document.getElementById("uploadASVBtn");
-  if (uploadASVBtn) {
-    uploadASVBtn.addEventListener("click", () => {
-      alert("ASV-Datei auswählen Funktion noch nicht implementiert.");
+  const importASVBtn = document.getElementById("importASVBtn");
+  if (importASVBtn) {
+    importASVBtn.addEventListener("click", () => {
+      alert("ASV-Datei importieren Funktion noch nicht implementiert.");
+    });
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const importGroupsBtn = document.getElementById("importGroupsBtn");
+  if (importGroupsBtn) {
+    importGroupsBtn.addEventListener("click", () => {
+      alert("Gruppen importieren Funktion noch nicht implementiert.");
     });
   }
 });
