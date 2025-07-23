@@ -316,7 +316,23 @@ def delete_log():
         except Exception as e:
             return f"Fehler beim Löschen der Log-Dateien: {str(e)}", 500
 
-    return "Bestätigung fehlgeschlagen. Log-Dateien wurden NICHT gelöscht", 400
+    return "Bestätigung fehlgeschlagen. Log-Dateien wurden NICHT gelöscht.", 400
+
+@app.route("/api/import-asv", methods=["POST"])
+def import_asv():
+    if 'confirm' not in request.form or request.form['confirm'] != 'true':
+        return jsonify({"error": "Bestätigung fehlgeschlagen. ASV-Datei wurde NICHT importiert."}), 400
+    
+    if 'file' not in request.files:
+        return jsonify({"error": "Keine Datei hochgeladen."}), 400
+            
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({"error": "Keine Datei ausgewählt."}), 400
+        
+    file.save(ASV_PATH)
+    return jsonify({"message": "ASV-Datei erfolgreich importiert."}), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)

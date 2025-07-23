@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (response.ok) {
             return response.text();
           }
-          throw new Error("Fehler beim Löschen der Log-Dateien");
+          throw new Error("Fehler beim Löschen der Log-Dateien.");
         })
         .then(message => {
           alert(message);
@@ -56,9 +56,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   const importASVBtn = document.getElementById("importASVBtn");
+  const fileInput = document.getElementById("fileInput");
   if (importASVBtn) {
     importASVBtn.addEventListener("click", () => {
-      alert("ASV-Datei importieren Funktion noch nicht implementiert.");
+      if (confirm("Möchten Sie die ASV-Datei überschreiben? Diese Aktion kann nicht rückgängig gemacht werden!")) {
+        fileInput.click();
+      }
+    });
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (file) {
+        const formData = new FormData();
+        formData.append("confirm", true);
+        formData.append("file", file);
+
+        // Sende die Datei mit einer POST-Anfrage
+        fetch("/api/import-asv", {
+          method: "POST",
+          body: formData
+        })
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error("Fehler beim Hochladen der ASV-Datei.");
+        })
+        .then(data => {
+          alert(data.message);
+        })
+        .catch(error => {
+          alert(error.message);
+        });
+      }
     });
   }
 });
