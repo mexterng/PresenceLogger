@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportASVBtn = document.getElementById("exportASVBtn");
   if (exportASVBtn) {
     exportASVBtn.addEventListener("click", () => {
-      alert("ASV-Datei exportieren Funktion noch nicht implementiert.");
+      window.location.href = "/api/export-asv";
     });
   }
 });

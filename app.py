@@ -11,6 +11,7 @@ lock = threading.Lock()
 
 GROUPS_DIR = ".\\data\\groups"
 LOG_FILE_PATH = ".\\data\\log"
+ASV_PATH = ".\\data\\asv-data.csv"
 
 
 def read_group_list():
@@ -294,6 +295,13 @@ def export_groups():
     zip_filename = f"groups_{timestamp}.zip"
     # send zip-file as download
     return send_file(zip_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
+
+@app.route("/api/export-asv", methods=["GET"])
+def export_asv():   
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"asv-data_{timestamp}.csv"
+    # send file as download
+    return send_file(ASV_PATH, as_attachment=True, download_name=filename)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)
