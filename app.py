@@ -1,22 +1,29 @@
 import os
 import csv
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file, Response
 from datetime import datetime
 import threading
+from io import BytesIO
+import zipfile
 
 app = Flask(__name__)
 lock = threading.Lock()
 
-DATA_DIR = "./data/groups"
-LOG_FILE_PATH = "./data/log"
+ADMIN_PSWD_PATH = ".\\data\\admin-pswd.key"
+GROUPS_DIR = ".\\data\\groups"
+LOG_FILE_PATH = ".\\data\\log"
+ASV_PATH = ".\\data\\asv-data.csv"
+
+REQUIRED_HEADERS_ASV = {"Klasse", "Familienname", "Rufname", "lokales Differenzierungsmerkmal"}
+REQUIRED_HEADERS_GROUPCSV = {"id", "lastname", "firstname"}
 
 
 def read_group_list():
-    return [file[:-4] for file in os.listdir(DATA_DIR) if file.endswith(".csv")]
+    return [file[:-4] for file in os.listdir(GROUPS_DIR) if file.endswith(".csv")]
 
 
 def read_group_members(filename):
-    path = os.path.join(DATA_DIR, filename + ".csv")
+    path = os.path.join(GROUPS_DIR, filename + ".csv")
     members = []
     with open(path, newline="", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -30,6 +37,21 @@ def read_group_members(filename):
             )
     return members
 
+
+def generate_zip(dir):
+    memory_file = BytesIO()
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for foldername, subfolders, filenames in os.walk(dir):
+            if not filenames and not subfolders: # empty folders
+                #print(f"Adding {foldername} to ZIP archive") # TODO: sse-connection
+                zf.write(foldername, os.path.relpath(foldername, dir) + '/')
+            for filename in filenames: # files
+                file_path = os.path.join(foldername, filename)
+                #print(f"Adding {file_path} to ZIP archive") # TODO: sse-connection
+                zf.write(file_path, os.path.relpath(file_path, dir))
+    
+    memory_file.seek(0)
+    return memory_file
 
 @app.route("/")
 def index():
@@ -255,6 +277,196 @@ def update_entry():
 
     return jsonify({"updated": updated})
 
+@app.route("/admin")
+def admin():
+    def check_auth(username, password):
+        if username == 'admin':
+            try:
+                with open(ADMIN_PSWD_PATH, 'r') as f:
+                    stored_password = f.read().strip()
+                return password == stored_password
+            except FileNotFoundError:
+                return False
+        return False
+
+    def authenticate():
+        return Response(
+            'Authentication required.', 401,
+            {'WWW-Authenticate': 'Basic realm="Admin Bereich"'}
+        )
+        
+    auth = request.authorization
+    if auth:
+        print(auth.username, auth.password)
+    if not auth or not check_auth(auth.username, auth.password):
+        return authenticate()
+    return render_template("admin.html")
+
+@app.route("/api/export-logs", methods=["GET"])
+def export_logs():    
+    zip_file = generate_zip(LOG_FILE_PATH)
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    zip_filename = f"logs_{timestamp}.zip"
+    # send zip-file as download
+    return send_file(zip_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
+
+@app.route("/api/export-groups", methods=["GET"])
+def export_groups():    
+    zip_file = generate_zip(GROUPS_DIR)
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    zip_filename = f"groups_{timestamp}.zip"
+    # send zip-file as download
+    return send_file(zip_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
+
+@app.route("/api/export-asv", methods=["GET"])
+def export_asv():
+    error_message = jsonify({"error": "Die ASV-Datei existiert nicht. Vermutlich wurden Gruppen direkt importiert."}), 404
+    if request.args.get("status-check") == "true":
+        if not os.path.exists(ASV_PATH):
+            return error_message
+        return jsonify({"ok": True})
+    
+    if not os.path.exists(ASV_PATH):
+        return error_message
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"asv-data_{timestamp}.csv"
+    return send_file(ASV_PATH, as_attachment=True, download_name=filename)
+
+@app.route("/api/delete-log", methods=["POST"])
+def delete_log():   
+    confirm = request.json.get('confirm')
+    if confirm == True:
+        try:
+            for filename in os.listdir(LOG_FILE_PATH):
+                file_path = os.path.join(LOG_FILE_PATH, filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            return "Log-Dateien wurden gelöscht.", 200
+        except Exception as e:
+            return f"Fehler beim Löschen der Log-Dateien: {str(e)}", 500
+
+    return "Bestätigung fehlgeschlagen. Log-Dateien wurden NICHT gelöscht.", 400
+
+@app.route("/api/import-asv", methods=["POST"])
+def import_asv():
+    if 'confirm' not in request.form or request.form['confirm'] != 'true':
+        return jsonify({"error": "Bestätigung fehlgeschlagen. ASV-Datei wurde NICHT importiert."}), 400
+    
+    if 'file' not in request.files:
+        return jsonify({"error": "Keine Datei hochgeladen."}), 400
+            
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({"error": "Keine Datei ausgewählt."}), 400
+        
+    file.save(ASV_PATH)
+    return jsonify({"message": "ASV-Datei erfolgreich importiert."}), 200
+
+@app.route("/api/generate-groups", methods=["POST"])
+def generate_group():
+    ### helper ###
+    def cls_to_filename(cls_str: str) -> str:
+        # Convert class name to filename in format '00a_IT_1.csv'
+        cls_str = cls_str.strip()
+        if cls_str and cls_str[0].isdigit() and not cls_str.startswith('1'):
+            cls_str = '0' + cls_str
+        return f"{cls_str}.csv"
+
+    def ensure_file_with_header(path: str) -> None:
+        # Create a new CSV file with header if it doesn't exist
+        if not os.path.exists(path):
+            with open(path, "w", newline="", encoding="utf-8") as f_out:
+                csv.writer(f_out).writerow(["id", "lastname", "firstname"])
+    ### helper ###
+    
+    confirm = request.json.get('confirm')
+    if confirm == True:
+        os.makedirs(GROUPS_DIR, exist_ok=True)
+        try:
+            with open(ASV_PATH, newline="", encoding="utf-8-sig") as f_in:
+                reader = csv.DictReader(f_in, delimiter=";")
+                
+                missing = REQUIRED_HEADERS_ASV - set(reader.fieldnames or [])
+                if missing:
+                    raise RuntimeError(f"Fehlende Spalten: {', '.join(missing)} in ASV-Datei")
+                
+                # delete old groups
+                for filename in os.listdir(GROUPS_DIR):
+                    file_path = os.path.join(GROUPS_DIR, filename)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                
+                # add new groups
+                for row in reader:
+                    filename = cls_to_filename(row["Klasse"])
+                    filepath = os.path.join(GROUPS_DIR, filename)
+                    ensure_file_with_header(filepath)
+
+                    with open(filepath, "a", newline="", encoding="utf-8") as f_out:
+                        csv.writer(f_out, delimiter=",").writerow([
+                            row["lokales Differenzierungsmerkmal"],
+                            row["Familienname"],
+                            row["Rufname"]
+                        ])
+            return "Gruppen wurden erfolgreich aktualisiert.", 200
+        except ValueError as ve:
+            return str(ve), 400
+        except RuntimeError as re:
+            return str(re), 400
+
+    return "Bestätigung fehlgeschlagen. Gruppen wurden NICHT aktualisiert.", 400
+
+@app.route("/api/import-groups", methods=["POST"])
+def import_groups():
+    if 'confirm' not in request.form or request.form['confirm'] != 'true':
+        return jsonify({"error": "Bestätigung fehlgeschlagen. ASV-Datei wurde NICHT importiert."}), 400
+    
+    if 'files' not in request.files:
+        return jsonify({"error": "Keine Dateien hochgeladen."}), 400
+
+    files = request.files.getlist('files')
+    if not files:
+        return jsonify({"error": "Keine Dateien ausgewählt."}), 40
+
+    # Header-validation
+    for file in files:
+        if not file.filename.endswith('.csv'):
+            return jsonify({"error": f"Ungültiges Dateiformat: {file.filename}"}), 400
+
+        try:
+            content = file.stream.read().decode("utf-8").splitlines()
+            reader = csv.reader(content)
+            headers = next(reader)
+            header_set = set(h.strip() for h in headers)
+
+            if not REQUIRED_HEADERS_GROUPCSV.issubset(header_set):
+                return jsonify({
+                    "error": f"Datei '{file.filename}' fehlt mindestens ein Pflicht-Header. "
+                             f"Erwartet: {REQUIRED_HEADERS_GROUPCSV}, gefunden: {header_set}"
+                }), 400
+
+            file.stream.seek(0)  # Reset für das Speichern
+        except Exception as e:
+            return jsonify({"error": f"Fehler beim Verarbeiten von {file.filename}: {str(e)}"}), 400
+
+    # delete old groups
+    for filename in os.listdir(GROUPS_DIR):
+        file_path = os.path.join(GROUPS_DIR, filename)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+    # delete ASV-file to avoid inconsistencies between the ASV-file and the group-data. 
+    os.remove(ASV_PATH)
+    
+    # add new groups
+    for file in files:
+        filepath = os.path.join(GROUPS_DIR, file.filename)
+        file.save(filepath)
+
+    return jsonify({"message": f"{len(files)} Gruppen-Dateien erfolgreich importiert."}), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)
