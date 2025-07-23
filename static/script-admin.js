@@ -26,6 +26,35 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+  const deleteLogsBtn = document.getElementById("deleteLogsBtn");
+  if (deleteLogsBtn) {
+    deleteLogsBtn.addEventListener("click", () => {
+      if (confirm("Möchten Sie alle Log-Dateien unwiderruflich löschen? Diese Aktion kann nicht rückgängig gemacht werden!")) {
+        fetch("/api/delete-log", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ confirm: true })
+        })
+        .then(response => {
+          if (response.ok) {
+            return response.text();
+          }
+          throw new Error("Fehler beim Löschen der Log-Dateien");
+        })
+        .then(message => {
+          alert(message);
+        })
+        .catch(error => {
+          alert(error.message);
+        });
+      }
+    });
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
   const importASVBtn = document.getElementById("importASVBtn");
   if (importASVBtn) {
     importASVBtn.addEventListener("click", () => {

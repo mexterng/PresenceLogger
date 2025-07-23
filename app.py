@@ -303,5 +303,20 @@ def export_asv():
     # send file as download
     return send_file(ASV_PATH, as_attachment=True, download_name=filename)
 
+@app.route("/api/delete-log", methods=["POST"])
+def delete_log():   
+    confirm = request.json.get('confirm')
+    if confirm == True:
+        try:
+            for filename in os.listdir(LOG_FILE_PATH):
+                file_path = os.path.join(LOG_FILE_PATH, filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            return "Log-Dateien wurden gelöscht.", 200
+        except Exception as e:
+            return f"Fehler beim Löschen der Log-Dateien: {str(e)}", 500
+
+    return "Bestätigung fehlgeschlagen. Log-Dateien wurden NICHT gelöscht", 400
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)
