@@ -13,6 +13,9 @@ GROUPS_DIR = ".\\data\\groups"
 LOG_FILE_PATH = ".\\data\\log"
 ASV_PATH = ".\\data\\asv-data.csv"
 
+REQUIRED_HEADERS_ASV = {"Klasse", "Familienname", "Rufname", "lokales Differenzierungsmerkmal"}
+REQUIRED_HEADERS_GROUPCSV = {"id", "lastname", "firstname"}
+
 
 def read_group_list():
     return [file[:-4] for file in os.listdir(GROUPS_DIR) if file.endswith(".csv")]
@@ -357,8 +360,8 @@ def generate_group():
         try:
             with open(ASV_PATH, newline="", encoding="utf-8-sig") as f_in:
                 reader = csv.DictReader(f_in, delimiter=";")
-                required = {"Klasse", "Familienname", "Rufname", "lokales Differenzierungsmerkmal"}
-                missing = required - set(reader.fieldnames or [])
+                
+                missing = REQUIRED_HEADERS_ASV - set(reader.fieldnames or [])
                 if missing:
                     raise RuntimeError(f"Fehlende Spalten: {', '.join(missing)} in ASV-Datei")
                 
@@ -388,6 +391,51 @@ def generate_group():
 
     return "Bestätigung fehlgeschlagen. Gruppen wurden NICHT aktualisiert.", 400
 
+@app.route("/api/import-groups", methods=["POST"])
+def import_groups():
+    if 'confirm' not in request.form or request.form['confirm'] != 'true':
+        return jsonify({"error": "Bestätigung fehlgeschlagen. ASV-Datei wurde NICHT importiert."}), 400
+    
+    if 'files' not in request.files:
+        return jsonify({"error": "Keine Dateien hochgeladen."}), 400
+
+    files = request.files.getlist('files')
+    if not files:
+        return jsonify({"error": "Keine Dateien ausgewählt."}), 40
+
+    # Header-validation
+    for file in files:
+        if not file.filename.endswith('.csv'):
+            return jsonify({"error": f"Ungültiges Dateiformat: {file.filename}"}), 400
+
+        try:
+            content = file.stream.read().decode("utf-8").splitlines()
+            reader = csv.reader(content)
+            headers = next(reader)
+            header_set = set(h.strip() for h in headers)
+
+            if not REQUIRED_HEADERS_GROUPCSV.issubset(header_set):
+                return jsonify({
+                    "error": f"Datei '{file.filename}' fehlt mindestens ein Pflicht-Header. "
+                             f"Erwartet: {REQUIRED_HEADERS_GROUPCSV}, gefunden: {header_set}"
+                }), 400
+
+            file.stream.seek(0)  # Reset für das Speichern
+        except Exception as e:
+            return jsonify({"error": f"Fehler beim Verarbeiten von {file.filename}: {str(e)}"}), 400
+
+    # delete old groups
+    for filename in os.listdir(GROUPS_DIR):
+        file_path = os.path.join(GROUPS_DIR, filename)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+    
+    # add new groups
+    for file in files:
+        filepath = os.path.join(GROUPS_DIR, file.filename)
+        file.save(filepath)
+
+    return jsonify({"message": f"{len(files)} Gruppen-Dateien erfolgreich importiert."}), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)

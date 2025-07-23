@@ -116,9 +116,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   const importGroupsBtn = document.getElementById("importGroupsBtn");
+  const fileInput = document.getElementById("importGroupFilesBtn");
+
   if (importGroupsBtn) {
     importGroupsBtn.addEventListener("click", () => {
-      alert("Gruppen importieren Funktion noch nicht implementiert.");
+      if (confirm("Möchten Sie Gruppen-Dateien importieren? Mögliche bestehende ASV-Datei und Gruppen-Dateien werden gelöscht.")) {
+        fileInput.click();
+      }
+    });
+    fileInput.addEventListener("change", () => {
+      const files = fileInput.files;
+      if (files.length === 0) {
+        alert("Keine Dateien ausgewählt.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("confirm", "true");
+
+      for (let i = 0; i < files.length; i++) {
+        formData.append("files", files[i]);
+      }
+
+      fetch("/api/import-groups", {
+        method: "POST",
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          alert("Fehler: " + data.error);
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        alert("Fehler beim Hochladen: " + error.message);
+      });
     });
   }
 });
