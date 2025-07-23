@@ -334,5 +334,62 @@ def import_asv():
     file.save(ASV_PATH)
     return jsonify({"message": "ASV-Datei erfolgreich importiert."}), 200
 
+@app.route("/api/generate-groups", methods=["POST"])
+def generate_group():
+    ### helper ###
+    def cls_to_filename(cls_str: str) -> str:
+        # Convert class name to filename in format '00a.csv'
+        cls_str = cls_str.strip()
+        digits = ''.join(ch for ch in cls_str if ch.isdigit())
+        letter = ''.join(ch for ch in cls_str if ch.isalpha()).lower()
+        if not digits or not letter:
+            raise ValueError(f"Ungültiges Klassenformat: {cls_str}")
+        return f"{digits.zfill(2)}{letter}.csv"
+
+    def ensure_file_with_header(path: str) -> None:
+        # Create a new CSV file with header if it doesn't exist
+        if not os.path.exists(path):
+            with open(path, "w", newline="", encoding="utf-8") as f_out:
+                csv.writer(f_out).writerow(["id", "lastname", "firstname"])
+    ### helper ###
+    
+    confirm = request.json.get('confirm')
+    if confirm == True:
+        os.makedirs(GROUPS_DIR, exist_ok=True)
+        try:
+            with open(ASV_PATH, newline="", encoding="utf-8-sig") as f_in:
+                reader = csv.DictReader(f_in, delimiter=";")
+                required = {"Klasse", "Familienname", "Rufname", "lokales Differenzierungsmerkmal"}
+                missing = required - set(reader.fieldnames or [])
+                if missing:
+                    raise RuntimeError(f"Fehlende Spalten: {', '.join(missing)} in ASV-Datei")
+                
+                # delete old groups
+                for filename in os.listdir(GROUPS_DIR):
+                    file_path = os.path.join(GROUPS_DIR, filename)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                
+                # add new groups
+                for row in reader:
+                    filename = cls_to_filename(row["Klasse"])
+                    filepath = os.path.join(GROUPS_DIR, filename)
+                    ensure_file_with_header(filepath)
+
+                    with open(filepath, "a", newline="", encoding="utf-8") as f_out:
+                        csv.writer(f_out, delimiter=",").writerow([
+                            row["lokales Differenzierungsmerkmal"],
+                            row["Familienname"],
+                            row["Rufname"]
+                        ])
+            return "Gruppen wurden erfolgreich aktualisiert.", 200
+        except ValueError as ve:
+            return str(ve), 400
+        except RuntimeError as re:
+            return str(re), 400
+
+    return "Bestätigung fehlgeschlagen. Gruppen wurden NICHT aktualisiert.", 400
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)

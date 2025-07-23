@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("fileInput");
   if (importASVBtn) {
     importASVBtn.addEventListener("click", () => {
-      if (confirm("Möchten Sie die ASV-Datei überschreiben? Diese Aktion kann nicht rückgängig gemacht werden!")) {
+      if (confirm("Möchten Sie die ASV-Datei und damit alle Gruppen überschreiben? Diese Aktion kann nicht rückgängig gemacht werden!")) {
         fileInput.click();
       }
     });
@@ -83,6 +83,28 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .then(data => {
           alert(data.message);
+          
+          // generate groups from uploaded asv-data
+          fetch("/api/generate-groups", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ confirm: true })
+          })
+          .then(response => {
+            if (response.ok) {
+              return response.text();
+            }
+            throw new Error("Fehler beim Erstellen der Gruppen.");
+          })
+          .then(message => {
+            alert(message);
+          })
+          .catch(error => {
+            alert(error.message);
+          });
+
         })
         .catch(error => {
           alert(error.message);
