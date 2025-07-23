@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   const importASVBtn = document.getElementById("importASVBtn");
-  const fileInput = document.getElementById("fileInput");
+  const fileInput = document.getElementById("importASVFile");
   if (importASVBtn) {
     importASVBtn.addEventListener("click", () => {
       if (confirm("Möchten Sie die ASV-Datei und damit alle Gruppen überschreiben? Diese Aktion kann nicht rückgängig gemacht werden!")) {
@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const file = fileInput.files[0];
       if (file) {
         const formData = new FormData();
-        formData.append("confirm", true);
+        formData.append("confirm", 'true');
         formData.append("file", file);
 
         // Sende die Datei mit einer POST-Anfrage
