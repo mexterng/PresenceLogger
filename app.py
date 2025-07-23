@@ -1,10 +1,13 @@
 import os
 import csv
-from flask import Flask, render_template, request, jsonify, send_file, Response
+from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request
 from datetime import datetime
 import threading
 from io import BytesIO
 import zipfile
+from report_generator import generate_report
+import shutil
+import time
 
 app = Flask(__name__)
 lock = threading.Lock()
@@ -467,6 +470,60 @@ def import_groups():
         file.save(filepath)
 
     return jsonify({"message": f"{len(files)} Gruppen-Dateien erfolgreich importiert."}), 200
+
+@app.route("/export", methods=["GET"])
+def export():
+    pass
+
+@app.route("/api/exportPDF-group", methods=["GET"])
+def exportPDF_group():
+    pass
+
+@app.route("/api/exportPDF-person", methods=["GET"])
+def exportPDF_person():
+    person_id = request.args.get('id')
+    if not person_id:
+        return "Missing 'id' parameter", 400
+
+    csv_path = f"data/log/{person_id}.csv"
+    if not os.path.exists(csv_path):
+        return f"CSV file for id {person_id} not found", 404
+
+    try:
+        pdf_response = generate_report(csv_path)
+        if not pdf_response["status"] == "OK":
+            return "PDF creation failed", 500
+
+        pdf_path = pdf_response["pdf_path"]
+        filename = pdf_response.get("filename", "report")
+        temp_dir = os.path.dirname(pdf_path)  # <--- dynamic extraction
+
+        @after_this_request
+        def cleanup_temp_dir(response):
+            delayed_cleanup(temp_dir)  # temp_dir = os.path.dirname(pdf_path)
+            return response
+
+        return send_file(pdf_path, as_attachment=True, download_name=f"{filename}.pdf")
+
+    except Exception as e:
+        return f"Error during PDF creation: {str(e)}", 500
+
+def delayed_cleanup(path, delay=1):
+    def remove():
+        time.sleep(delay)
+        try:
+            shutil.rmtree(path)
+        except Exception as e:
+            print(f"[Cleanup Warning] Could not remove temp dir: {e}")
+    threading.Thread(target=remove).start()
+    
+@app.route("/api/exportCSV-group", methods=["GET"])
+def exportCSV_group():
+    pass
+
+@app.route("/api/exportCSV-person", methods=["GET"])
+def exportCSV_person():
+    pass
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)

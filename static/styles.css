@@ -16,8 +16,9 @@ input {
 
 a {
   text-decoration: none;
-  color: inherit; /* optional: übernimmt die Textfarbe der Tabelle */
+  color: inherit;
   cursor: pointer;
+  margin: 20px;
 }
 
 input,
