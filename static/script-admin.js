@@ -20,7 +20,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportASVBtn = document.getElementById("exportASVBtn");
   if (exportASVBtn) {
     exportASVBtn.addEventListener("click", () => {
-      window.location.href = "/api/export-asv";
+      fetch("/api/export-asv?status-check=true")
+        .then(response => {
+          if (response.ok) {
+            window.location.href = "/api/export-asv";
+          } else {
+            return response.json().then(data => {
+              throw new Error(data.error || "Fehler beim Export.");
+            });
+          }
+        })
+        .catch(error => {
+          alert(error.message);
+        });
     });
   }
 });

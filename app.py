@@ -300,10 +300,18 @@ def export_groups():
     return send_file(zip_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
 
 @app.route("/api/export-asv", methods=["GET"])
-def export_asv():   
+def export_asv():
+    error_message = jsonify({"error": "Die ASV-Datei existiert nicht. Vermutlich wurden Gruppen direkt importiert."}), 404
+    if request.args.get("status-check") == "true":
+        if not os.path.exists(ASV_PATH):
+            return error_message
+        return jsonify({"ok": True})
+    
+    if not os.path.exists(ASV_PATH):
+        return error_message
+
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"asv-data_{timestamp}.csv"
-    # send file as download
     return send_file(ASV_PATH, as_attachment=True, download_name=filename)
 
 @app.route("/api/delete-log", methods=["POST"])
@@ -429,6 +437,8 @@ def import_groups():
         file_path = os.path.join(GROUPS_DIR, filename)
         if os.path.isfile(file_path):
             os.remove(file_path)
+    # delete ASV-file to avoid inconsistencies between the ASV-file and the group-data. 
+    os.remove(ASV_PATH)
     
     # add new groups
     for file in files:
