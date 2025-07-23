@@ -10,7 +10,7 @@ app = Flask(__name__)
 lock = threading.Lock()
 
 DATA_DIR = "./data/groups"
-LOG_FILE_PATH = "./data/log"
+LOG_FILE_PATH = ".\\data\\log"
 
 
 def read_group_list():
@@ -31,6 +31,22 @@ def read_group_members(filename):
                 }
             )
     return members
+
+
+def generate_zip(dir):
+    memory_file = BytesIO()
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for foldername, subfolders, filenames in os.walk(dir):
+            if not filenames and not subfolders: # empty folders
+                #print(f"Adding {foldername} to ZIP archive") # TODO: sse-connection
+                zf.write(foldername, os.path.relpath(foldername, dir) + '/')
+            for filename in filenames: # files
+                file_path = os.path.join(foldername, filename)
+                #print(f"Adding {file_path} to ZIP archive") # TODO: sse-connection
+                zf.write(file_path, os.path.relpath(file_path, dir))
+    
+    memory_file.seek(0)
+    return memory_file
 
 
 @app.route("/")
@@ -262,25 +278,14 @@ def admin():
     return render_template("admin.html")
 
 @app.route("/api/export-logs", methods=["GET"])
-def export_logs():
-    log_dir = "./data/log"
-    
-    memory_file = BytesIO()
-    
-    # generate zip-file
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for foldername, subfolders, filenames in os.walk(log_dir):
-            for filename in filenames:
-                file_path = os.path.join(foldername, filename)
-                zf.write(file_path, os.path.relpath(file_path, log_dir))
-    
-    memory_file.seek(0)
-    
+def export_logs():    
+    zip_file = generate_zip(LOG_FILE_PATH)
     
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     zip_filename = f"logs_{timestamp}.zip"
     # send zip-file as download
-    return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
+    return send_file(zip_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)
