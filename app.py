@@ -9,16 +9,16 @@ import zipfile
 app = Flask(__name__)
 lock = threading.Lock()
 
-DATA_DIR = "./data/groups"
+GROUPS_DIR = ".\\data\\groups"
 LOG_FILE_PATH = ".\\data\\log"
 
 
 def read_group_list():
-    return [file[:-4] for file in os.listdir(DATA_DIR) if file.endswith(".csv")]
+    return [file[:-4] for file in os.listdir(GROUPS_DIR) if file.endswith(".csv")]
 
 
 def read_group_members(filename):
-    path = os.path.join(DATA_DIR, filename + ".csv")
+    path = os.path.join(GROUPS_DIR, filename + ".csv")
     members = []
     with open(path, newline="", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -286,6 +286,14 @@ def export_logs():
     # send zip-file as download
     return send_file(zip_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
 
+@app.route("/api/export-groups", methods=["GET"])
+def export_groups():    
+    zip_file = generate_zip(GROUPS_DIR)
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    zip_filename = f"groups_{timestamp}.zip"
+    # send zip-file as download
+    return send_file(zip_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)

@@ -11,10 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportGroupsBtn = document.getElementById("exportGroupsBtn");
   if (exportGroupsBtn) {
     exportGroupsBtn.addEventListener("click", () => {
-      exportGroupsBtn.textContent = "Test"
-      setTimeout(() => {
-        alert("Unterrichtsgruppen exportieren Funktion noch nicht implementiert.");
-      }, 0);
+      window.location.href = "/api/export-groups";
     });
   }
 });
