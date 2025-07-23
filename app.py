@@ -1,6 +1,6 @@
 import os
 import csv
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, Response
 from datetime import datetime
 import threading
 from io import BytesIO
@@ -9,6 +9,7 @@ import zipfile
 app = Flask(__name__)
 lock = threading.Lock()
 
+ADMIN_PSWD_PATH = ".\\data\\admin-pswd.key"
 GROUPS_DIR = ".\\data\\groups"
 LOG_FILE_PATH = ".\\data\\log"
 ASV_PATH = ".\\data\\asv-data.csv"
@@ -51,7 +52,6 @@ def generate_zip(dir):
     
     memory_file.seek(0)
     return memory_file
-
 
 @app.route("/")
 def index():
@@ -279,6 +279,27 @@ def update_entry():
 
 @app.route("/admin")
 def admin():
+    def check_auth(username, password):
+        if username == 'admin':
+            try:
+                with open(ADMIN_PSWD_PATH, 'r') as f:
+                    stored_password = f.read().strip()
+                return password == stored_password
+            except FileNotFoundError:
+                return False
+        return False
+
+    def authenticate():
+        return Response(
+            'Authentication required.', 401,
+            {'WWW-Authenticate': 'Basic realm="Admin Bereich"'}
+        )
+        
+    auth = request.authorization
+    if auth:
+        print(auth.username, auth.password)
+    if not auth or not check_auth(auth.username, auth.password):
+        return authenticate()
     return render_template("admin.html")
 
 @app.route("/api/export-logs", methods=["GET"])
