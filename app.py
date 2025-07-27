@@ -471,7 +471,9 @@ def import_groups():
 
 @app.route("/export", methods=["GET"])
 def export():
-    pass
+    groups = read_group_list()
+    groups.sort(key=str.lower)
+    return render_template("export.html", groups=groups)
 
 @app.route("/api/exportPDF-group", methods=["GET"])
 def exportPDF_group():
@@ -515,9 +517,42 @@ def delayed_cleanup(path, delay=1):
             print(f"[Cleanup Warning] Could not remove temp dir: {e}")
     threading.Thread(target=remove).start()
     
-@app.route("/api/exportCSV-group", methods=["GET"])
+@app.route("/api/exportCSV-group", methods=["POST"])
 def exportCSV_group():
-    pass
+    data = request.get_json()
+    file_type = data.get("fileType")
+    selected = data.get("selected")
+    group = data.get("group")
+    
+    if file_type != "CSV" or not selected:
+        return "Ungültige Anfrage", 400
+
+    zip_buffer = BytesIO()
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for entry in selected:
+            file_id = entry.get("id")
+            firstname = entry.get("firstname", "")
+            lastname = entry.get("lastname", "")
+            filename = f"{group}_{lastname}_{firstname}_{timestamp}.csv"
+            filepath = os.path.join(LOG_FILE_PATH, f"{file_id}.csv")
+            if os.path.isfile(filepath):
+                zip_file.write(filepath, arcname=filename)
+            else:
+                # empty file dummy
+                zip_file.writestr(filename, "initials,group,id,lastname,firstname,status,timestamp\n")
+
+    zip_buffer.seek(0)
+
+    zip_filename = f"selected-logs_{timestamp}.zip"
+
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=zip_filename
+    )
+    
 
 @app.route("/api/exportCSV-person", methods=["GET"])
 def exportCSV_person():

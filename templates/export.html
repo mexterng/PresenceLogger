@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta
+      charset="UTF-8"
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Export</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{{ url_for('static', filename='favicon.svg') }}"
+    />
+  </head>
+  <body>
+    <h1>Export</h1>
+    <label for="groupSelect">Gruppe wählen:</label>
+    <select id="groupSelect">
+      <option value="">-- Gruppe auswählen --</option>
+      {% for group in groups %}
+      <option value="{{ group }}">{{ group }}</option>
+      {% endfor %}
+    </select>
+    <i
+      id="favoriteStar"
+      class="fa-regular fa-star"
+      title="Gruppe als Favorit speichern"
+      style="cursor: pointer; opacity: 0.3; pointer-events: none"
+    ></i>
+
+    <div id="memberList"></div>
+
+    <div class="buttonRow">
+      <button id="pdfExportBtn">PDF-Export</button>
+      <button id="csvExportBtn">CSV-Export</button>
+    </div>
+
+    <p id="statusMsg"></p>
+
+    <script src="{{ url_for('static', filename='script-export.js') }}"></script>
+  </body>
+</html>

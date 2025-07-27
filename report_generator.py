@@ -151,7 +151,7 @@ def generate_report(input_csv_path):
         plt.close()
 
         # --- Create PDF ---
-        pdf_file_path = os.path.join(TEMP_DIR, f"report.pdf")
+        pdf_file_path = os.path.join(TEMP_DIR, f"{df.iloc[0]['code']}.pdf")
 
         doc = SimpleDocTemplate(pdf_file_path, pagesize=A4,
             topMargin=1.5 * cm,
