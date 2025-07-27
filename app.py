@@ -557,6 +557,8 @@ def exportCSV_group():
 @app.route("/api/exportCSV-person", methods=["GET"])
 def exportCSV_person():
     person_id = request.args.get('id')
+    firstname = request.args.get('firstname')
+    lastname = request.args.get('lastname')
     if not person_id:
         return "Missing 'id' parameter", 400
 
@@ -566,7 +568,7 @@ def exportCSV_person():
         return f"CSV file for id {person_id} not found", 404
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"log-data_{person_id}_{timestamp}.csv"
+    filename = f"{lastname}_{firstname}_{timestamp}.csv"
     return send_file(csv_path, as_attachment=True, download_name=filename)
 
 if __name__ == "__main__":
