@@ -21,7 +21,7 @@ def generate_report(input_csv_path):
     try:
         # --- 1. Read CSV ---
         df = pd.read_csv(input_csv_path)
-        df.columns = ['person', 'code', 'session', 'firstname', 'lastname', 'status', 'timestamp']
+        df.columns = ['person', 'code', 'session', 'lastname', 'firstname', 'status', 'timestamp']
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         df = df.sort_values(by='timestamp')
 
@@ -188,7 +188,8 @@ def generate_report(input_csv_path):
                 'lastname': 'Nachname',
                 'firstname': 'Vorname',
                 'status': 'Status',
-                'timestamp': 'Zeitstempel'
+                'timestamp': 'Zeitstempel',
+                'valid_pair': 'valide'
             }
             headers = [column_map.get(col, col) for col in df.columns]
             data = [headers] + df.astype(str).values.tolist()

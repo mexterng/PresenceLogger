@@ -21,6 +21,12 @@ a {
   margin: 20px;
 }
 
+ul {
+  display: inline-block;
+  text-align: left;
+  margin: 0;
+}
+
 input,
 select {
   padding: 6px;

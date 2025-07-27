@@ -299,8 +299,6 @@ def admin():
         )
         
     auth = request.authorization
-    if auth:
-        print(auth.username, auth.password)
     if not auth or not check_auth(auth.username, auth.password):
         return authenticate()
     return render_template("admin.html")
