@@ -48,6 +48,9 @@ def generate_report(input_csv_path):
                             break
 
         df_valid = pd.DataFrame(valid_rows)
+        
+        # sign data if valid
+        df['valid_pair'] = pd.Series(df.index.isin(df_valid.index), index=df.index).map({True: '✓', False: 'x'})
 
         # --- 3. Calculate statistics ---
         pairs = [(valid_rows[i], valid_rows[i + 1]) for i in range(0, len(valid_rows), 2)]
