@@ -11,6 +11,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 import os
 from reportlab.lib.units import cm
+import shutil
 
 HISTO_TIMES = list(range(21))  # 0 to 20 minutes
 TIMESLOTS_PATH = ".\\static\\timeslots.txt"
@@ -19,9 +20,35 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 def generate_report(input_csv_path):
     try:
+        def create_dummy_pdf(path):
+            styles = getSampleStyleSheet()
+            pdf = SimpleDocTemplate(
+                path,
+                pagesize=A4,
+                topMargin=1.5 * cm,
+                bottomMargin=1.5 * cm,
+                leftMargin=2.5 * cm,
+                rightMargin=1.5 * cm
+            )
+            content = [Paragraph("Keine Berichte verfügbar.", styles['Normal'])]
+            pdf.build(content)
+            
+        if not os.path.exists(input_csv_path):
+            dummy_path = os.path.join(TEMP_DIR, "dummy.pdf")
+            # no log file for this id
+            if not os.path.exists(dummy_path):
+                # create dummy
+                create_dummy_pdf(dummy_path)
+            
+            # copy dummy
+            filename_base = os.path.splitext(os.path.basename(input_csv_path))[0]
+            pdf_file_path = os.path.join(TEMP_DIR, f"{filename_base}.pdf")
+            shutil.copyfile(dummy_path, pdf_file_path)
+            return {'status': 'OK', 'pdf_path': pdf_file_path, 'filename': filename_base}
+
         # --- 1. Read CSV ---
         df = pd.read_csv(input_csv_path)
-        df.columns = ['person', 'code', 'session', 'lastname', 'firstname', 'status', 'timestamp']
+        df.columns = ['teacher', 'group', 'code', 'lastname', 'firstname', 'status', 'timestamp']
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         df = df.sort_values(by='timestamp')
 
@@ -182,10 +209,10 @@ def generate_report(input_csv_path):
 
         def df_to_table(df):
             column_map = {
-                'person': 'Lehrkraft',
-                'code': 'Unterrichtsgruppe',
+                'teacher': 'Lehrkraft',
+                'group': 'Unterrichtsgruppe',
                 'session': 'ID',
-                'lastname': 'Nachname',
+                'code': 'Nachname',
                 'firstname': 'Vorname',
                 'status': 'Status',
                 'timestamp': 'Zeitstempel',

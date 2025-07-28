@@ -119,7 +119,7 @@ function submitAction(fileType) {
   if (missingFields) {
     return;
   }
-
+  
   // TODO: hier export!
   if (fileType == "CSV"){
     fetch('/api/exportCSV-group', {
@@ -150,7 +150,9 @@ function submitAction(fileType) {
     });
   }
   else if(fileType == "PDF"){
-        window.location.href = `/api/exportPDF-group${params.toString()}`;
+    const params = new URLSearchParams();
+    selected.forEach(item => params.append("id", item.id));
+    window.location.href = `/api/exportPDF-group?${params.toString()}`;
   }
   else{
     console.log("Filetype not supported!")

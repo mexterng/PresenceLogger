@@ -16,6 +16,7 @@ ADMIN_PSWD_PATH = ".\\data\\admin-pswd.key"
 GROUPS_DIR = ".\\data\\groups"
 LOG_FILE_PATH = ".\\data\\log"
 ASV_PATH = ".\\data\\asv-data.csv"
+TEMP_DIR = ".\\data\\temp"
 
 REQUIRED_HEADERS_ASV = {"Klasse", "Familienname", "Rufname", "lokales Differenzierungsmerkmal"}
 REQUIRED_HEADERS_GROUPCSV = {"id", "lastname", "firstname"}
@@ -477,36 +478,54 @@ def export():
 
 @app.route("/api/exportPDF-group", methods=["GET"])
 def exportPDF_group():
-    pass
+    ids = request.args.getlist('id')
+    if not ids:
+        return "Missing 'id' parameters", 400
 
-@app.route("/api/exportPDF-person", methods=["GET"])
-def exportPDF_person():
-    person_id = request.args.get('id')
-    if not person_id:
-        return "Missing 'id' parameter", 400
-
-    csv_path = os.path.join(LOG_FILE_PATH, person_id + ".csv")
-    if not os.path.exists(csv_path):
-        return f"CSV file for id {person_id} not found", 404
+    pdf_files = []
 
     try:
-        pdf_response = generate_report(csv_path)
-        if not pdf_response["status"] == "OK":
-            return "PDF creation failed", 500
+        for person_id in ids:
+            csv_path = os.path.join(LOG_FILE_PATH, f"{person_id}.csv")
+            pdf_response = generate_report(csv_path)
+            if pdf_response["status"] != "OK":
+                continue  # skip pdf failures
 
-        pdf_path = pdf_response["pdf_path"]
-        filename = pdf_response.get("filename", "report")
-        temp_dir = os.path.dirname(pdf_path)  # <--- dynamic extraction
+            pdf_path = pdf_response["pdf_path"]
+            filename = pdf_response.get("filename", person_id)
+            target_path = os.path.join(TEMP_DIR, f"{filename}.pdf")
+
+            
+            if pdf_path != target_path:
+                # Falls Datei existiert, überschreiben
+                if os.path.exists(target_path):
+                    os.remove(target_path)
+                os.rename(pdf_path, target_path)
+            pdf_files.append(target_path)
+
+        if not pdf_files:
+            return "Keine PDFs zum Verpacken gefunden", 404
+        
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        zip_filename = f"Auswertungen_{timestamp}.zip"
+        zip_path = os.path.join(TEMP_DIR, zip_filename)
+        # Falls ZIP existiert, entfernen
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+
+        with zipfile.ZipFile(zip_path, 'w') as zipf:
+            for file_path in pdf_files:
+                zipf.write(file_path, os.path.basename(file_path))
 
         @after_this_request
-        def cleanup_temp_dir(response):
-            delayed_cleanup(temp_dir)  # temp_dir = os.path.dirname(pdf_path)
+        def cleanup(response):
+            delayed_cleanup(TEMP_DIR)
             return response
 
-        return send_file(pdf_path, as_attachment=True, download_name=f"{filename}.pdf")
+        return send_file(zip_path, as_attachment=True, download_name=zip_filename)
 
     except Exception as e:
-        return f"Error during PDF creation: {str(e)}", 500
+        return f"Fehler während der PDF-Erstellung oder Archivierung: {str(e)}", 500
 
 def delayed_cleanup(path, delay=1):
     def remove():
