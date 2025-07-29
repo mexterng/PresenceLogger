@@ -1,10 +1,13 @@
 import os
 import csv
-from flask import Flask, render_template, request, jsonify, send_file, Response
+from flask import Flask, render_template, request, jsonify, send_file, Response, after_this_request
 from datetime import datetime
 import threading
 from io import BytesIO
 import zipfile
+from report_generator import generate_report
+import shutil
+import time
 
 app = Flask(__name__)
 lock = threading.Lock()
@@ -13,6 +16,7 @@ ADMIN_PSWD_PATH = ".\\data\\admin-pswd.key"
 GROUPS_DIR = ".\\data\\groups"
 LOG_FILE_PATH = ".\\data\\log"
 ASV_PATH = ".\\data\\asv-data.csv"
+TEMP_DIR = ".\\data\\temp"
 
 REQUIRED_HEADERS_ASV = {"Klasse", "Familienname", "Rufname", "lokales Differenzierungsmerkmal"}
 REQUIRED_HEADERS_GROUPCSV = {"id", "lastname", "firstname"}
@@ -296,8 +300,6 @@ def admin():
         )
         
     auth = request.authorization
-    if auth:
-        print(auth.username, auth.password)
     if not auth or not check_auth(auth.username, auth.password):
         return authenticate()
     return render_template("admin.html")
@@ -467,6 +469,152 @@ def import_groups():
         file.save(filepath)
 
     return jsonify({"message": f"{len(files)} Gruppen-Dateien erfolgreich importiert."}), 200
+
+@app.route("/export", methods=["GET"])
+def export():
+    groups = read_group_list()
+    groups.sort(key=str.lower)
+    return render_template("export.html", groups=groups)
+
+@app.route("/api/exportPDF-person", methods=["GET"])
+def exportPDF_person():
+    person_id = request.args.get('id')
+    if not person_id:
+        return "Missing 'id' parameter", 400
+
+    csv_path = os.path.join(LOG_FILE_PATH, person_id + ".csv")
+    try:
+        pdf_response = generate_report(csv_path)
+        if not pdf_response["status"] == "OK":
+            return "PDF creation failed", 500
+
+        pdf_path = pdf_response["pdf_path"]
+        filename = pdf_response.get("filename", "report")
+        temp_dir = os.path.dirname(pdf_path)  # <--- dynamic extraction
+
+        @after_this_request
+        def cleanup_temp_dir(response):
+            delayed_cleanup(temp_dir)  # temp_dir = os.path.dirname(pdf_path)
+            return response
+
+        return send_file(pdf_path, as_attachment=True, download_name=f"{filename}.pdf")
+
+    except Exception as e:
+        return f"Error during PDF creation: {str(e)}", 500
+
+@app.route("/api/exportPDF-group", methods=["GET"])
+def exportPDF_group():
+    ids = request.args.getlist('id')
+    if not ids:
+        return "Missing 'id' parameters", 400
+
+    pdf_files = []
+
+    try:
+        for person_id in ids:
+            csv_path = os.path.join(LOG_FILE_PATH, f"{person_id}.csv")
+            pdf_response = generate_report(csv_path)
+            if pdf_response["status"] != "OK":
+                continue  # skip pdf failures
+
+            pdf_path = pdf_response["pdf_path"]
+            filename = pdf_response.get("filename", person_id)
+            target_path = os.path.join(TEMP_DIR, f"{filename}.pdf")
+
+            
+            if pdf_path != target_path:
+                # Falls Datei existiert, überschreiben
+                if os.path.exists(target_path):
+                    os.remove(target_path)
+                os.rename(pdf_path, target_path)
+            pdf_files.append(target_path)
+
+        if not pdf_files:
+            return "Keine PDFs zum Verpacken gefunden", 404
+        
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        zip_filename = f"Auswertungen_{timestamp}.zip"
+        zip_path = os.path.join(TEMP_DIR, zip_filename)
+        # Falls ZIP existiert, entfernen
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+
+        with zipfile.ZipFile(zip_path, 'w') as zipf:
+            for file_path in pdf_files:
+                zipf.write(file_path, os.path.basename(file_path))
+
+        @after_this_request
+        def cleanup(response):
+            delayed_cleanup(TEMP_DIR)
+            return response
+
+        return send_file(zip_path, as_attachment=True, download_name=zip_filename)
+
+    except Exception as e:
+        return f"Fehler während der PDF-Erstellung oder Archivierung: {str(e)}", 500
+
+def delayed_cleanup(path, delay=1):
+    def remove():
+        time.sleep(delay)
+        try:
+            shutil.rmtree(path)
+        except Exception as e:
+            print(f"[Cleanup Warning] Could not remove temp dir: {e}")
+    threading.Thread(target=remove).start()
+    
+@app.route("/api/exportCSV-group", methods=["POST"])
+def exportCSV_group():
+    data = request.get_json()
+    file_type = data.get("fileType")
+    selected = data.get("selected")
+    group = data.get("group")
+    
+    if file_type != "CSV" or not selected:
+        return "Ungültige Anfrage", 400
+
+    zip_buffer = BytesIO()
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for entry in selected:
+            file_id = entry.get("id")
+            firstname = entry.get("firstname", "")
+            lastname = entry.get("lastname", "")
+            filename = f"{group}_{lastname}_{firstname}_{timestamp}.csv"
+            filepath = os.path.join(LOG_FILE_PATH, f"{file_id}.csv")
+            if os.path.isfile(filepath):
+                zip_file.write(filepath, arcname=filename)
+            else:
+                # empty file dummy
+                zip_file.writestr(filename, "initials,group,id,lastname,firstname,status,timestamp\n")
+
+    zip_buffer.seek(0)
+
+    zip_filename = f"selected-logs_{timestamp}.zip"
+
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=zip_filename
+    )
+    
+
+@app.route("/api/exportCSV-person", methods=["GET"])
+def exportCSV_person():
+    person_id = request.args.get('id')
+    firstname = request.args.get('firstname')
+    lastname = request.args.get('lastname')
+    if not person_id:
+        return "Missing 'id' parameter", 400
+
+    csv_path = os.path.join(LOG_FILE_PATH, person_id + ".csv")
+    
+    if not os.path.exists(csv_path):
+        return f"CSV file for id {person_id} not found", 404
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"{lastname}_{firstname}_{timestamp}.csv"
+    return send_file(csv_path, as_attachment=True, download_name=filename)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=False)

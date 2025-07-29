@@ -20,19 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportASVBtn = document.getElementById("exportASVBtn");
   if (exportASVBtn) {
     exportASVBtn.addEventListener("click", () => {
-      fetch("/api/export-asv?status-check=true")
-        .then(response => {
-          if (response.ok) {
-            window.location.href = "/api/export-asv";
-          } else {
-            return response.json().then(data => {
-              throw new Error(data.error || "Fehler beim Export.");
-            });
-          }
-        })
-        .catch(error => {
-          alert(error.message);
-        });
+      window.location.href = "/api/export-asv";
     });
   }
 });
@@ -135,36 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (confirm("Möchten Sie Gruppen-Dateien importieren? Mögliche bestehende ASV-Datei und Gruppen-Dateien werden gelöscht.")) {
         fileInput.click();
       }
-    });
-    fileInput.addEventListener("change", () => {
-      const files = fileInput.files;
-      if (files.length === 0) {
-        alert("Keine Dateien ausgewählt.");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("confirm", "true");
-
-      for (let i = 0; i < files.length; i++) {
-        formData.append("files", files[i]);
-      }
-
-      fetch("/api/import-groups", {
-        method: "POST",
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          alert("Fehler: " + data.error);
-        } else {
-          alert(data.message);
-        }
-      })
-      .catch(error => {
-        alert("Fehler beim Hochladen: " + error.message);
-      });
     });
   }
 });
