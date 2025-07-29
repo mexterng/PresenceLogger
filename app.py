@@ -476,6 +476,32 @@ def export():
     groups.sort(key=str.lower)
     return render_template("export.html", groups=groups)
 
+@app.route("/api/exportPDF-person", methods=["GET"])
+def exportPDF_person():
+    person_id = request.args.get('id')
+    if not person_id:
+        return "Missing 'id' parameter", 400
+
+    csv_path = os.path.join(LOG_FILE_PATH, person_id + ".csv")
+    try:
+        pdf_response = generate_report(csv_path)
+        if not pdf_response["status"] == "OK":
+            return "PDF creation failed", 500
+
+        pdf_path = pdf_response["pdf_path"]
+        filename = pdf_response.get("filename", "report")
+        temp_dir = os.path.dirname(pdf_path)  # <--- dynamic extraction
+
+        @after_this_request
+        def cleanup_temp_dir(response):
+            delayed_cleanup(temp_dir)  # temp_dir = os.path.dirname(pdf_path)
+            return response
+
+        return send_file(pdf_path, as_attachment=True, download_name=f"{filename}.pdf")
+
+    except Exception as e:
+        return f"Error during PDF creation: {str(e)}", 500
+
 @app.route("/api/exportPDF-group", methods=["GET"])
 def exportPDF_group():
     ids = request.args.getlist('id')

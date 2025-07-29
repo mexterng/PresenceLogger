@@ -16,9 +16,9 @@ import shutil
 HISTO_TIMES = list(range(21))  # 0 to 20 minutes
 TIMESLOTS_PATH = ".\\static\\timeslots.txt"
 TEMP_DIR = ".\\data\\temp"
-os.makedirs(TEMP_DIR, exist_ok=True)
 
 def generate_report(input_csv_path):
+    os.makedirs(TEMP_DIR, exist_ok=True)
     try:
         def create_dummy_pdf(path):
             styles = getSampleStyleSheet()
