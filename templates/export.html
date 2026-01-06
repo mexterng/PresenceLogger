@@ -22,9 +22,12 @@
     />
   </head>
   <body>
+    <a id="close" href="./">
+      <i class="fa-solid fa-xmark"></i> Schließen
+    </a>
     <h1>Export</h1>
     <label for="groupSelect">Gruppe wählen:</label>
-    <div id="groupWrapper">
+    <div id="groupWrapper"  style="margin-bottom: 0;">
       <select id="groupSelect">
         <option value="">-- Gruppe auswählen --</option>
         {% for group in groups %}

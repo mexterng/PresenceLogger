@@ -142,3 +142,16 @@ table th {
 .selectAll {
   font-style: italic;
 }
+
+#exportLink {
+  margin: 0;
+  color: #67b32d;
+}
+#exportLink:hover {
+  color: #579826;
+}
+
+#close {
+  color: red;
+  margin: 0;
+}
