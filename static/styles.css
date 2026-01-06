@@ -4,6 +4,8 @@ body {
   color: #333;
   padding: 20px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
 }
 
 label,
@@ -12,6 +14,10 @@ input {
   display: block;
   margin: 10px auto;
   font-size: 1rem;
+}
+
+label {
+  margin-bottom: 0;
 }
 
 a {
@@ -130,6 +136,7 @@ table th {
 
 #groupWrapper {
   display: ruby;
+  margin-bottom: 1rem;
 }
 
 .selectAll {

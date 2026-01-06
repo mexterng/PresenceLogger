@@ -60,6 +60,9 @@ function loadMembers(group) {
         document.getElementById("statusMsg").innerText = "";
       }
 
+      const exportLink = document.getElementById("exportLink");
+      exportLink.href = `./export?selectedGroup=${group}`
+
       let table = `<table><tr><th></th><th>Nachname</th><th>Vorname</th></tr>`;
       list.forEach((person, index) => {
         table += `<tr>
