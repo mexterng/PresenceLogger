@@ -50,7 +50,7 @@ function loadMembers(group) {
         document.getElementById("statusMsg").innerText = "";
       }
 
-      let table = `<table><tr><th></th><th>Nachname</th><th>Vorname</th></tr>`;
+      let table = `<table><tr id="selectAll"><td><input type="checkbox" id="selectAllCheckbox"></td><td colspan="2">Alle auswählen</td></tr><tr></tr><tr><th></th><th>Nachname</th><th>Vorname</th></tr>`;
       list.forEach((person, index) => {
         table += `<tr>
                         <td><input type="checkbox" class="personRadio" name="selectedPerson" data-index="${index}"></td>
@@ -62,6 +62,10 @@ function loadMembers(group) {
       memberList.innerHTML = table;
 
       memberList.dataset.members = JSON.stringify(list);
+
+      document.getElementById("selectAllCheckbox").addEventListener("change", () => {
+        toggleSelectAllMembersAction();
+      });
     });
 }
 
@@ -75,10 +79,17 @@ function selectPerson(index) {
   }
 }
 
-document.getElementById("groupSelect").addEventListener("change", () => {
-  updateFavoriteStar();
-  const group = document.getElementById("groupSelect").value;
-  loadMembers(group);
+document.addEventListener("DOMContentLoaded", () => {
+    const select = document.getElementById("groupSelect");
+    if (select.value) {
+        loadMembers(select.value);
+        updateFavoriteStar();
+    }
+
+    select.addEventListener("change", () => {
+        updateFavoriteStar();
+        loadMembers(select.value);
+    });
 });
 
 function submitAction(fileType) {
@@ -120,43 +131,47 @@ function submitAction(fileType) {
     return;
   }
   
-  // TODO: hier export!
-  if (fileType == "CSV"){
-    fetch('/api/exportCSV-group', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileType: 'CSV', group: group, selected: selected })
-    })
-    .then(response => {
-      const disposition = response.headers.get("Content-Disposition");
-      let filename = "export.zip";  // fallback
-      if (disposition && disposition.includes("filename=")) {
-        const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)["']?/i);
-        if (match && match[1]) {
-          filename = decodeURIComponent(match[1]);
-        }
-      }
-      return response.blob().then(blob => ({ blob, filename }));
-    })
-    .then(({ blob, filename }) => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    });
-  }
-  else if(fileType == "PDF"){
-    const params = new URLSearchParams();
-    selected.forEach(item => params.append("id", item.id));
-    window.location.href = `/api/exportPDF-group?${params.toString()}`;
+  if (fileType === "CSV") {
+    downloadZip('/api/exportCSV-group', { fileType: 'CSV', group, selected }, 'export.zip');
+  } else if (fileType === "PDF") {
+      downloadZip('/api/exportPDF-group', { group, selected }, 'export.zip');
   }
   else{
     console.log("Filetype not supported!")
   }
+}
+
+function toggleSelectAllMembersAction() {
+  const selectAll = document.getElementById("selectAllCheckbox");
+  const checkbuttons = document.querySelectorAll(".personRadio");
+
+  checkbuttons.forEach(cb => {
+    cb.checked = selectAll.checked;
+  });
+}
+
+function downloadZip(url, payload) {
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.blob().then(blob => ({ blob, disposition: response.headers.get("Content-Disposition") })))
+    .then(({ blob, disposition }) => {
+        let filename = "export.zip";
+        if (disposition && disposition.includes("filename=")) {
+            const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)["']?/i);
+            if (match && match[1]) filename = decodeURIComponent(match[1]);
+        }
+        const urlObj = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = urlObj;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(urlObj);
+    });
 }
 
 function updateFavoriteStar() {

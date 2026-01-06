@@ -194,7 +194,7 @@ def generate_report(input_csv_path):
         lastname = df.iloc[0]['lastname']
         fullname = f"{firstname} {lastname}"
         now_dt = datetime.now()
-        now_str = now_dt.strftime("%d.%m.%Y %H:%M")
+        now_str = now_dt.strftime("%d.%m.%Y %H:%M Uhr")
         file_ts = now_dt.strftime("%Y-%m-%d_%H-%M")
         filename_base = f"Auswertung_{lastname}-{firstname}_{file_ts}".replace(" ", "_").replace(":", "-")
 
@@ -211,8 +211,8 @@ def generate_report(input_csv_path):
             column_map = {
                 'teacher': 'Lehrkraft',
                 'group': 'Unterrichtsgruppe',
-                'session': 'ID',
-                'code': 'Nachname',
+                'code': 'ID',
+                'lastname': 'Nachname',
                 'firstname': 'Vorname',
                 'status': 'Status',
                 'timestamp': 'Zeitstempel',

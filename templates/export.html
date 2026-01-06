@@ -22,20 +22,25 @@
     />
   </head>
   <body>
+    <a id="close" href="./">
+      <i class="fa-solid fa-xmark"></i> Schließen
+    </a>
     <h1>Export</h1>
     <label for="groupSelect">Gruppe wählen:</label>
-    <select id="groupSelect">
-      <option value="">-- Gruppe auswählen --</option>
-      {% for group in groups %}
-      <option value="{{ group }}">{{ group }}</option>
-      {% endfor %}
-    </select>
-    <i
+    <div id="groupWrapper"  style="margin-bottom: 0;">
+      <select id="groupSelect">
+        <option value="">-- Gruppe auswählen --</option>
+        {% for group in groups %}
+          <option value="{{ group }}" {% if group == selected_group %}selected{% endif %}>{{ group }}</option>
+        {% endfor %}
+      </select>
+      <i
       id="favoriteStar"
       class="fa-regular fa-star"
       title="Gruppe als Favorit speichern"
       style="cursor: pointer; opacity: 0.3; pointer-events: none"
-    ></i>
+      ></i>
+    </div>
 
     <div id="memberList"></div>
 

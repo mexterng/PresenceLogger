@@ -474,7 +474,8 @@ def import_groups():
 def export():
     groups = read_group_list()
     groups.sort(key=str.lower)
-    return render_template("export.html", groups=groups)
+    selected_group = request.args.get("selectedGroup")
+    return render_template("export.html", groups=groups, selected_group=selected_group)
 
 @app.route("/api/exportPDF-person", methods=["GET"])
 def exportPDF_person():
@@ -502,24 +503,32 @@ def exportPDF_person():
     except Exception as e:
         return f"Error during PDF creation: {str(e)}", 500
 
-@app.route("/api/exportPDF-group", methods=["GET"])
+@app.route("/api/exportPDF-group", methods=["POST"])
 def exportPDF_group():
-    ids = request.args.getlist('id')
-    if not ids:
+    data = request.get_json()
+    selected = data.get("selected")
+    group = data.get("group")
+    if not selected or not group:
         return "Missing 'id' parameters", 400
 
     pdf_files = []
 
     try:
-        for person_id in ids:
+        for entry in selected:
+            person_id = entry["id"]
+            lastname = entry.get("lastname", "")
+            firstname = entry.get("firstname", "")
             csv_path = os.path.join(LOG_FILE_PATH, f"{person_id}.csv")
+            
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            export_filename = f"{group}_{lastname}_{firstname}_{timestamp}"
+            
             pdf_response = generate_report(csv_path)
             if pdf_response["status"] != "OK":
                 continue  # skip pdf failures
 
             pdf_path = pdf_response["pdf_path"]
-            filename = pdf_response.get("filename", person_id)
-            target_path = os.path.join(TEMP_DIR, f"{filename}.pdf")
+            target_path = os.path.join(TEMP_DIR, f"{export_filename}.pdf")
 
             
             if pdf_path != target_path:
@@ -533,7 +542,7 @@ def exportPDF_group():
             return "Keine PDFs zum Verpacken gefunden", 404
         
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        zip_filename = f"Auswertungen_{timestamp}.zip"
+        zip_filename = f"PDF-Auswertungen_{timestamp}.zip"
         zip_path = os.path.join(TEMP_DIR, zip_filename)
         # Falls ZIP existiert, entfernen
         if os.path.exists(zip_path):
@@ -589,7 +598,7 @@ def exportCSV_group():
 
     zip_buffer.seek(0)
 
-    zip_filename = f"selected-logs_{timestamp}.zip"
+    zip_filename = f"CSV-Logdateien_{timestamp}.zip"
 
     return send_file(
         zip_buffer,
