@@ -27,7 +27,7 @@
     <select id="groupSelect">
       <option value="">-- Gruppe auswählen --</option>
       {% for group in groups %}
-      <option value="{{ group }}">{{ group }}</option>
+        <option value="{{ group }}" {% if group == selected_group %}selected{% endif %}>{{ group }}</option>
       {% endfor %}
     </select>
     <i
