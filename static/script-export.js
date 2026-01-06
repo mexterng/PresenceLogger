@@ -50,7 +50,7 @@ function loadMembers(group) {
         document.getElementById("statusMsg").innerText = "";
       }
 
-      let table = `<table><tr><th></th><th>Nachname</th><th>Vorname</th></tr>`;
+      let table = `<table><tr id="selectAll"><td><input type="checkbox" id="selectAllCheckbox"></td><td colspan="2">Alle auswählen</td></tr><tr></tr><tr><th></th><th>Nachname</th><th>Vorname</th></tr>`;
       list.forEach((person, index) => {
         table += `<tr>
                         <td><input type="checkbox" class="personRadio" name="selectedPerson" data-index="${index}"></td>
@@ -62,6 +62,10 @@ function loadMembers(group) {
       memberList.innerHTML = table;
 
       memberList.dataset.members = JSON.stringify(list);
+
+      document.getElementById("selectAllCheckbox").addEventListener("change", () => {
+        toggleSelectAllMembersAction();
+      });
     });
 }
 
@@ -135,6 +139,15 @@ function submitAction(fileType) {
   else{
     console.log("Filetype not supported!")
   }
+}
+
+function toggleSelectAllMembersAction() {
+  const selectAll = document.getElementById("selectAllCheckbox");
+  const checkbuttons = document.querySelectorAll(".personRadio");
+
+  checkbuttons.forEach(cb => {
+    cb.checked = selectAll.checked;
+  });
 }
 
 function downloadZip(url, payload) {

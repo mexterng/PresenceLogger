@@ -127,3 +127,7 @@ table th {
 .underlineLink:hover {
   color: #000;
 }
+
+.selectAll {
+  font-style: italic;
+}
