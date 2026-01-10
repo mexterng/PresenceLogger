@@ -12,11 +12,13 @@ import time
 app = Flask(__name__)
 lock = threading.Lock()
 
-ADMIN_PSWD_PATH = ".\\data\\admin-pswd.key"
-GROUPS_DIR = ".\\data\\groups"
-LOG_FILE_PATH = ".\\data\\log"
-ASV_PATH = ".\\data\\asv-data.csv"
-TEMP_DIR = ".\\data\\temp"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+ADMIN_PSWD_PATH =  os.path.join(DATA_DIR, "admin-pswd.key")
+GROUPS_DIR = os.path.join(DATA_DIR, "groups")
+LOG_FILE_DIR =  os.path.join(DATA_DIR, "log")
+ASV_PATH =  os.path.join(DATA_DIR, "asv-data.csv")
+TEMP_DIR =  os.path.join(DATA_DIR, "temp")
 
 REQUIRED_HEADERS_ASV = {"Klasse", "Familienname", "Rufname", "lokales Differenzierungsmerkmal"}
 REQUIRED_HEADERS_GROUPCSV = {"id", "lastname", "firstname"}
@@ -88,11 +90,11 @@ def submit_action():
         return jsonify({"error": "Unvollständige Angaben", "initials": initials, "group": group, "people": people, "action":action}), 400
 
     with lock:
-        os.makedirs(LOG_FILE_PATH, exist_ok=True)
+        os.makedirs(LOG_FILE_DIR, exist_ok=True)
         
         for person in people:
             person_id = person["id"]
-            log_file = os.path.join(LOG_FILE_PATH, f"{person_id}.csv")
+            log_file = os.path.join(LOG_FILE_DIR, f"{person_id}.csv")
             
             # Create a new CSV file with header if it doesn't exist.
             if not os.path.exists(log_file):
@@ -140,7 +142,7 @@ def edit():
     today = datetime.now().date()
     entries = []
     
-    log_file = os.path.join(LOG_FILE_PATH, f"{id}.csv")
+    log_file = os.path.join(LOG_FILE_DIR, f"{id}.csv")
     
     if os.path.exists(log_file):
         with lock:
@@ -168,7 +170,7 @@ def edit_all():
 
     entries = []
     
-    log_file = os.path.join(LOG_FILE_PATH, f"{id}.csv")
+    log_file = os.path.join(LOG_FILE_DIR, f"{id}.csv")
     
     if os.path.exists(log_file):
         with lock:
@@ -198,7 +200,7 @@ def delete_entry():
     if not person_id:
         return jsonify({"error": "Ungültige ID"}), 400
 
-    log_file = os.path.join(LOG_FILE_PATH, f"{person_id}.csv")
+    log_file = os.path.join(LOG_FILE_DIR, f"{person_id}.csv")
     
     if not os.path.exists(log_file):
         return jsonify({"error": f"Keine Einträge zu {person_id} gefunden."}), 404
@@ -245,7 +247,7 @@ def update_entry():
     if not person_id:
         return jsonify({"error": "Ungültige ID"}), 400
 
-    log_file = os.path.join(LOG_FILE_PATH, f"{person_id}.csv")
+    log_file = os.path.join(LOG_FILE_DIR, f"{person_id}.csv")
 
     if not os.path.exists(log_file):
         return jsonify({"error": "Keine Einträge gefunden"}), 404
@@ -306,7 +308,7 @@ def admin():
 
 @app.route("/api/export-logs", methods=["GET"])
 def export_logs():    
-    zip_file = generate_zip(LOG_FILE_PATH)
+    zip_file = generate_zip(LOG_FILE_DIR)
     
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     zip_filename = f"logs_{timestamp}.zip"
@@ -342,8 +344,8 @@ def delete_log():
     confirm = request.json.get('confirm')
     if confirm == True:
         try:
-            for filename in os.listdir(LOG_FILE_PATH):
-                file_path = os.path.join(LOG_FILE_PATH, filename)
+            for filename in os.listdir(LOG_FILE_DIR):
+                file_path = os.path.join(LOG_FILE_DIR, filename)
                 if os.path.isfile(file_path):
                     os.remove(file_path)
             return "Log-Dateien wurden gelöscht.", 200
@@ -483,7 +485,7 @@ def exportPDF_person():
     if not person_id:
         return "Missing 'id' parameter", 400
 
-    csv_path = os.path.join(LOG_FILE_PATH, person_id + ".csv")
+    csv_path = os.path.join(LOG_FILE_DIR, person_id + ".csv")
     try:
         pdf_response = generate_report(csv_path)
         if not pdf_response["status"] == "OK":
@@ -518,7 +520,7 @@ def exportPDF_group():
             person_id = entry["id"]
             lastname = entry.get("lastname", "")
             firstname = entry.get("firstname", "")
-            csv_path = os.path.join(LOG_FILE_PATH, f"{person_id}.csv")
+            csv_path = os.path.join(LOG_FILE_DIR, f"{person_id}.csv")
             
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             export_filename = f"{group}_{lastname}_{firstname}_{timestamp}"
@@ -589,7 +591,7 @@ def exportCSV_group():
             firstname = entry.get("firstname", "")
             lastname = entry.get("lastname", "")
             filename = f"{group}_{lastname}_{firstname}_{timestamp}.csv"
-            filepath = os.path.join(LOG_FILE_PATH, f"{file_id}.csv")
+            filepath = os.path.join(LOG_FILE_DIR, f"{file_id}.csv")
             if os.path.isfile(filepath):
                 zip_file.write(filepath, arcname=filename)
             else:
@@ -616,7 +618,7 @@ def exportCSV_person():
     if not person_id:
         return "Missing 'id' parameter", 400
 
-    csv_path = os.path.join(LOG_FILE_PATH, person_id + ".csv")
+    csv_path = os.path.join(LOG_FILE_DIR, person_id + ".csv")
     
     if not os.path.exists(csv_path):
         return f"CSV file for id {person_id} not found", 404
