@@ -14,8 +14,9 @@ from reportlab.lib.units import cm
 import shutil
 
 HISTO_TIMES = list(range(21))  # 0 to 20 minutes
-TIMESLOTS_PATH = ".\\static\\timeslots.txt"
-TEMP_DIR = ".\\data\\temp"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TIMESLOTS_PATH = os.path.join(BASE_DIR, "static", "timeslots.txt")
+TEMP_DIR = os.path.join(BASE_DIR, "data", "temp")
 
 def generate_report(input_csv_path):
     os.makedirs(TEMP_DIR, exist_ok=True)
