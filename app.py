@@ -627,5 +627,16 @@ def exportCSV_person():
     filename = f"{lastname}_{firstname}_{timestamp}.csv"
     return send_file(csv_path, as_attachment=True, download_name=filename)
 
+def read_port(config_path: str, default_port: int = 4000) -> int:
+    # Read port from file, fallback to default
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            return int(f.read().strip())
+    except (OSError, ValueError):
+        return default_port
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=4000, debug=False)
+    port_config_path = os.path.join(os.path.dirname(__file__), "port.conf")
+    port = read_port(port_config_path)
+    
+    app.run(host="0.0.0.0", port=port, debug=False)
