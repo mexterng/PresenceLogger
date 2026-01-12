@@ -525,7 +525,7 @@ def exportPDF_group():
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             export_filename = f"{group}_{lastname}_{firstname}_{timestamp}"
             
-            pdf_response = generate_report(csv_path)
+            pdf_response = generate_report(csv_path, firstname, lastname)
             if pdf_response["status"] != "OK":
                 continue  # skip pdf failures
 

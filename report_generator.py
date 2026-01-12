@@ -18,9 +18,20 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TIMESLOTS_PATH = os.path.join(BASE_DIR, "static", "timeslots.txt")
 TEMP_DIR = os.path.join(BASE_DIR, "data", "temp")
 
-def generate_report(input_csv_path):
+def generate_report(input_csv_path, firstname = "", lastname = ""):
     os.makedirs(TEMP_DIR, exist_ok=True)
+    fullname = f"{firstname} {lastname}"
+    now_dt = datetime.now()
+    now_str = now_dt.strftime("%d.%m.%Y %H:%M Uhr")
     try:
+        def add_page_elements(canvas, doc):
+            canvas.saveState()
+            header_text = f"Auswertung von {fullname} am {now_str}"
+            canvas.setFont('Helvetica', 9)
+            canvas.drawString(2 * cm, A4[1] - 1.2 * cm, header_text)
+            canvas.setTitle(header_text)
+            canvas.restoreState()
+        
         def create_dummy_pdf(path):
             styles = getSampleStyleSheet()
             pdf = SimpleDocTemplate(
@@ -32,14 +43,12 @@ def generate_report(input_csv_path):
                 rightMargin=1.5 * cm
             )
             content = [Paragraph("Keine Berichte verfügbar.", styles['Normal'])]
-            pdf.build(content)
+            pdf.build(content, onFirstPage=add_page_elements, onLaterPages=add_page_elements)
             
         if not os.path.exists(input_csv_path):
             dummy_path = os.path.join(TEMP_DIR, "dummy.pdf")
-            # no log file for this id
-            if not os.path.exists(dummy_path):
-                # create dummy
-                create_dummy_pdf(dummy_path)
+            # create dummy
+            create_dummy_pdf(dummy_path)
             
             # copy dummy
             filename_base = os.path.splitext(os.path.basename(input_csv_path))[0]
@@ -194,19 +203,8 @@ def generate_report(input_csv_path):
         firstname = df.iloc[0]['firstname']
         lastname = df.iloc[0]['lastname']
         fullname = f"{firstname} {lastname}"
-        now_dt = datetime.now()
-        now_str = now_dt.strftime("%d.%m.%Y %H:%M Uhr")
         file_ts = now_dt.strftime("%Y-%m-%d_%H-%M")
         filename_base = f"Auswertung_{lastname}-{firstname}_{file_ts}".replace(" ", "_").replace(":", "-")
-
-
-        def add_page_elements(canvas, doc):
-            canvas.saveState()
-            header_text = f"Auswertung von {fullname} am {now_str}"
-            canvas.setFont('Helvetica', 9)
-            canvas.drawString(2 * cm, A4[1] - 1.2 * cm, header_text)
-            canvas.setTitle(header_text)
-            canvas.restoreState()
 
         def df_to_table(df):
             column_map = {
