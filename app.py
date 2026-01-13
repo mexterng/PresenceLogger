@@ -505,8 +505,8 @@ def exportPDF_person():
     except Exception as e:
         return f"Error during PDF creation: {str(e)}", 500
 
-@app.route("/api/exportPDF-group", methods=["POST"])
-def exportPDF_group():
+@app.route("/api/export-multiple", methods=["POST"])
+def export_multiple():
     data = request.get_json()
     selected = data.get("selected")
     group = data.get("group")
@@ -525,7 +525,7 @@ def exportPDF_group():
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             export_filename = f"{group}_{lastname}_{firstname}_{timestamp}"
             
-            pdf_response = generate_report(csv_path, firstname, lastname, full_report=False)
+            pdf_response = generate_report(csv_path, firstname, lastname)
             if pdf_response["status"] != "OK":
                 continue  # skip pdf failures
 

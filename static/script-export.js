@@ -133,8 +133,8 @@ function submitAction(fileType) {
   
   if (fileType === "CSV") {
     downloadZip('/api/exportCSV-group', { fileType: 'CSV', group, selected }, 'export.zip');
-  } else if (fileType === "PDF") {
-      downloadZip('/api/exportPDF-group', { group, selected }, 'export.zip');
+  } else if (fileType === "ZIP") {
+      downloadZip('/api/export-multiple', { group, selected }, 'export.zip');
   }
   else{
     console.log("Filetype not supported!")
@@ -225,8 +225,8 @@ document.getElementById("favoriteStar").addEventListener("click", () => {
   highlightFavoriteOptions();
 });
 
-document.getElementById("pdfExportBtn").addEventListener("click", () => {
-  submitAction("PDF");
+document.getElementById("zipExportBtn").addEventListener("click", () => {
+  submitAction("ZIP");
 });
 
 document.getElementById("csvExportBtn").addEventListener("click", () => {
