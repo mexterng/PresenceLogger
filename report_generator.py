@@ -18,7 +18,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TIMESLOTS_PATH = os.path.join(BASE_DIR, "static", "timeslots.txt")
 TEMP_DIR = os.path.join(BASE_DIR, "data", "temp")
 
-def generate_report(input_csv_path, firstname = "", lastname = ""):
+def generate_report(input_csv_path, firstname = "", lastname = "", full_report=True):
     os.makedirs(TEMP_DIR, exist_ok=True)
     fullname = f"{firstname} {lastname}"
     now_dt = datetime.now()
@@ -229,15 +229,17 @@ def generate_report(input_csv_path, firstname = "", lastname = ""):
             ]))
             return table
 
-        elements.append(Paragraph("Alle Einträge (ungefiltert)", styles['Heading2']))        
-        elements.append(Spacer(1, 12))
-        elements.append(df_to_table(df))
-        elements.append(PageBreak())
+        
+        if full_report:
+            elements.append(Paragraph("Alle Einträge (ungefiltert)", styles['Heading2']))        
+            elements.append(Spacer(1, 12))
+            elements.append(df_to_table(df))
+            elements.append(PageBreak())
 
-        elements.append(Paragraph("Gefilterte Ein-/Austrittspaare", styles['Heading2']))        
-        elements.append(Spacer(1, 12))
-        elements.append(df_to_table(df_valid))
-        elements.append(PageBreak())
+            elements.append(Paragraph("Gefilterte Ein-/Austrittspaare", styles['Heading2']))        
+            elements.append(Spacer(1, 12))
+            elements.append(df_to_table(df_valid))
+            elements.append(PageBreak())
 
         elements.append(Paragraph("Statistiken", styles['Heading2']))
         elements.append(Spacer(1, 12))

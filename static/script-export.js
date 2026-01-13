@@ -132,10 +132,14 @@ function submitAction(fileType) {
   }
   
   if (fileType === "CSV") {
-    downloadZip('/api/exportCSV-group', { fileType: 'CSV', group, selected }, 'export.zip');
-  } else if (fileType === "PDF") {
-      downloadZip('/api/exportPDF-group', { group, selected }, 'export.zip');
-  }
+    downloadFile('/api/exportCSV-group', { fileType, group, selected }, 'export.zip');
+  } 
+  else if (fileType === "ZIP") {
+    downloadFile('/api/export-multiple', { fileType, group, selected }, 'export.zip');
+  } 
+  else if (fileType === "PDF") {
+    downloadFile('/api/export-multiple', { fileType, group, selected }, 'export.pdf');
+  } 
   else{
     console.log("Filetype not supported!")
   }
@@ -150,7 +154,7 @@ function toggleSelectAllMembersAction() {
   });
 }
 
-function downloadZip(url, payload) {
+function downloadFile(url, payload, filename) {
     fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,7 +162,6 @@ function downloadZip(url, payload) {
     })
     .then(response => response.blob().then(blob => ({ blob, disposition: response.headers.get("Content-Disposition") })))
     .then(({ blob, disposition }) => {
-        let filename = "export.zip";
         if (disposition && disposition.includes("filename=")) {
             const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)["']?/i);
             if (match && match[1]) filename = decodeURIComponent(match[1]);
@@ -227,6 +230,10 @@ document.getElementById("favoriteStar").addEventListener("click", () => {
 
 document.getElementById("pdfExportBtn").addEventListener("click", () => {
   submitAction("PDF");
+});
+
+document.getElementById("zipExportBtn").addEventListener("click", () => {
+  submitAction("ZIP");
 });
 
 document.getElementById("csvExportBtn").addEventListener("click", () => {
