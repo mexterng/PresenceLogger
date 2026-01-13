@@ -5,6 +5,7 @@ from datetime import datetime
 import threading
 from io import BytesIO
 import zipfile
+from pypdf import PdfReader, PdfWriter
 from report_generator import generate_report
 import shutil
 import time
@@ -508,6 +509,7 @@ def exportPDF_person():
 @app.route("/api/export-multiple", methods=["POST"])
 def export_multiple():
     data = request.get_json()
+    file_type = data.get("fileType")
     selected = data.get("selected")
     group = data.get("group")
     if not selected or not group:
@@ -525,7 +527,7 @@ def export_multiple():
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             export_filename = f"{group}_{lastname}_{firstname}_{timestamp}"
             
-            pdf_response = generate_report(csv_path, firstname, lastname)
+            pdf_response = generate_report(csv_path, firstname, lastname, full_report=(file_type=="ZIP"))
             if pdf_response["status"] != "OK":
                 continue  # skip pdf failures
 
@@ -542,24 +544,43 @@ def export_multiple():
 
         if not pdf_files:
             return "Keine PDFs zum Verpacken gefunden", 404
-        
+                
+        output_filename = ""
+        output_path = ""
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        zip_filename = f"PDF-Auswertungen_{timestamp}.zip"
-        zip_path = os.path.join(TEMP_DIR, zip_filename)
-        # Falls ZIP existiert, entfernen
-        if os.path.exists(zip_path):
-            os.remove(zip_path)
-
-        with zipfile.ZipFile(zip_path, 'w') as zipf:
+        if file_type == "PDF":
+            output_filename = f"PDF-Auswertungen_{timestamp}.pdf"
+            output_path = os.path.join(TEMP_DIR, output_filename)
+            # Falls PDF existiert, entfernen
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            
+            # merge pdfs
+            writer = PdfWriter()
             for file_path in pdf_files:
-                zipf.write(file_path, os.path.basename(file_path))
+                reader = PdfReader(file_path)
+                for page in reader.pages:
+                    writer.add_page(page)
+            with open(output_path, "wb") as f:
+                writer.write(f)
+                 
+        else:
+            output_filename = f"PDF-Auswertungen_{timestamp}.zip"
+            output_path = os.path.join(TEMP_DIR, output_filename)
+            # Falls ZIP existiert, entfernen
+            if os.path.exists(output_path):
+                os.remove(output_path)
+
+            with zipfile.ZipFile(output_path, 'w') as zipf:
+                for file_path in pdf_files:
+                    zipf.write(file_path, os.path.basename(file_path))
 
         @after_this_request
         def cleanup(response):
             delayed_cleanup(TEMP_DIR)
             return response
 
-        return send_file(zip_path, as_attachment=True, download_name=zip_filename)
+        return send_file(output_path, as_attachment=True, download_name=output_filename)
 
     except Exception as e:
         return f"Fehler während der PDF-Erstellung oder Archivierung: {str(e)}", 500
